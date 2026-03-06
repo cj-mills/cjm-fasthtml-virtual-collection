@@ -8,3 +8,350 @@
 ``` bash
 pip install cjm_fasthtml_virtual_collection
 ```
+
+## Project Structure
+
+    nbs/
+    └── core/ (4)
+        ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
+        ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
+        ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
+        └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
+
+Total: 4 notebooks across 1 directory
+
+## Module Dependencies
+
+``` mermaid
+graph LR
+    core_button_ids[core.button_ids<br/>core.button_ids]
+    core_html_ids[core.html_ids<br/>core.html_ids]
+    core_models[core.models<br/>core.models]
+    core_windowing[core.windowing<br/>core.windowing]
+```
+
+No cross-module dependencies detected.
+
+## CLI Reference
+
+No CLI commands found in this project.
+
+## Module Overview
+
+Detailed documentation for each module in the project:
+
+### core.button_ids (`button_ids.ipynb`)
+
+> Hidden button ID generators for navigation triggers.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.core.button_ids import (
+    VirtualCollectionButtonIds
+)
+```
+
+#### Classes
+
+``` python
+@dataclass
+class VirtualCollectionButtonIds:
+    "Hidden button IDs for keyboard/scroll navigation triggers."
+    
+    prefix: str  # Instance prefix (e.g., 'vc0', 'fb')
+    
+    def nav_up(self) -> str: return f"{self.prefix}-btn-nav-up"
+    
+        @property
+        def nav_down(self) -> str: return f"{self.prefix}-btn-nav-down"
+    
+    def nav_down(self) -> str: return f"{self.prefix}-btn-nav-down"
+    
+        @property
+        def nav_page_up(self) -> str: return f"{self.prefix}-btn-nav-page-up"
+    
+    def nav_page_up(self) -> str: return f"{self.prefix}-btn-nav-page-up"
+    
+        @property
+        def nav_page_down(self) -> str: return f"{self.prefix}-btn-nav-page-down"
+    
+    def nav_page_down(self) -> str: return f"{self.prefix}-btn-nav-page-down"
+    
+        @property
+        def nav_first(self) -> str: return f"{self.prefix}-btn-nav-first"
+    
+    def nav_first(self) -> str: return f"{self.prefix}-btn-nav-first"
+    
+        @property
+        def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
+    
+    def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
+```
+
+### core.html_ids (`html_ids.ipynb`)
+
+> HTML element ID generators for virtual collection components.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.core.html_ids import (
+    VirtualCollectionHtmlIds
+)
+```
+
+#### Classes
+
+``` python
+@dataclass
+class VirtualCollectionHtmlIds:
+    "HTML element ID generators for a virtual collection instance."
+    
+    prefix: str  # Instance prefix (e.g., 'vc0', 'fb')
+    
+    def collection(self) -> str: return f"{self.prefix}-collection"
+    
+        # -- Header --
+        @property
+        def header(self) -> str: return f"{self.prefix}-header"
+    
+    def header(self) -> str: return f"{self.prefix}-header"
+    
+        # -- Viewport --
+        @property
+        def viewport(self) -> str: return f"{self.prefix}-viewport"
+    
+    def viewport(self) -> str: return f"{self.prefix}-viewport"
+    
+        # -- Rows container (OOB swap target for navigation) --
+        @property
+        def rows(self) -> str: return f"{self.prefix}-rows"
+    
+    def rows(self) -> str: return f"{self.prefix}-rows"
+    
+        # -- Dynamic row/cell/item IDs --
+        def row_id(self, index: int) -> str:  # ID for a table row
+    
+    def row_id(self, index: int) -> str:  # ID for a table row
+            return f"{self.prefix}-row-{index}"
+    
+        def cell_id(self, row_index: int, col_key: str) -> str:  # ID for a table cell
+    
+    def cell_id(self, row_index: int, col_key: str) -> str:  # ID for a table cell
+            return f"{self.prefix}-row-{row_index}-col-{col_key}"
+    
+        def item_id(self, index: int) -> str:  # ID for a grid item
+    
+    def item_id(self, index: int) -> str:  # ID for a grid item
+            return f"{self.prefix}-item-{index}"
+    
+        # -- Custom scrollbar --
+        @property
+        def scrollbar_track(self) -> str: return f"{self.prefix}-scrollbar-track"
+    
+    def scrollbar_track(self) -> str: return f"{self.prefix}-scrollbar-track"
+    
+        @property
+        def scrollbar_thumb(self) -> str: return f"{self.prefix}-scrollbar-thumb"
+    
+    def scrollbar_thumb(self) -> str: return f"{self.prefix}-scrollbar-thumb"
+    
+        # -- Footer --
+        @property
+        def footer(self) -> str: return f"{self.prefix}-footer"
+    
+    def footer(self) -> str: return f"{self.prefix}-footer"
+    
+        # -- Progress indicator --
+        @property
+        def progress(self) -> str: return f"{self.prefix}-progress"
+    
+    def progress(self) -> str: return f"{self.prefix}-progress"
+    
+        # -- Hidden inputs --
+        @property
+        def window_start_input(self) -> str: return f"{self.prefix}-window-start-input"
+    
+    def window_start_input(self) -> str: return f"{self.prefix}-window-start-input"
+```
+
+### core.models (`models.ipynb`)
+
+> Data models for virtual collection state, configuration, column
+> definitions, render contexts, and URL bundles.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.core.models import (
+    ColumnDef,
+    VirtualCollectionConfig,
+    VirtualCollectionState,
+    RowRenderContext,
+    CellRenderContext,
+    VirtualCollectionUrls
+)
+```
+
+#### Functions
+
+``` python
+def _auto_prefix() -> str:  # Auto-generated prefix like 'vc0', 'vc1', etc.
+    "Generate a unique prefix for a virtual collection instance."
+```
+
+#### Classes
+
+``` python
+@dataclass
+class ColumnDef:
+    "Column definition for table layout."
+    
+    key: str  # Unique column identifier (used in cell IDs)
+    header: str = ''  # Display text for header
+    width: str = '1fr'  # CSS grid column width
+    sortable: bool = False  # Whether column header is clickable for sort
+    resizable: bool = False  # Whether column border is draggable
+    header_cls: str = ''  # Additional CSS classes for header cell
+    cell_cls: str = ''  # Additional CSS classes for data cells
+```
+
+``` python
+@dataclass
+class VirtualCollectionConfig:
+    "Initialization-time configuration for a virtual collection."
+    
+    prefix: str = ''  # HTML ID prefix (auto-generated if empty)
+    layout: str = 'table'  # 'table' or 'grid'
+    row_height: int = 40  # Row height in px (fixed)
+    columns: Tuple[ColumnDef, ...] = ()  # Column definitions
+    sticky_left: int = 0  # Number of columns pinned left
+    sticky_right: int = 0  # Number of columns pinned right
+    columns_per_row: int = 4  # Items per grid row
+    grid_gap: str = '1rem'  # Gap between grid items
+    disable_scroll_in_modes: Tuple[str, ...] = ()  # Mode-based scroll suppression
+    show_scrollbar: bool = True  # Show custom scrollbar
+    min_thumb_height: int = 24  # Minimum scrollbar thumb height (px)
+    
+```
+
+``` python
+@dataclass
+class VirtualCollectionState:
+    "Mutable runtime state for a virtual collection."
+    
+    window_start: int = 0  # First visible row index
+    visible_rows: int = 0  # Number of visible rows (from auto-fit)
+    total_items: int = 0  # Total item count (set by consumer)
+    viewport_height: float = 0.0  # Measured viewport height (px)
+    is_auto_mode: bool = True  # Auto-adjust visible rows from viewport
+    cursor_index: int = -1  # Keyboard cursor position (-1 = none)
+    sort_column: str = ''  # Current sort column key (empty = unsorted)
+    sort_ascending: bool = True  # Sort direction
+```
+
+``` python
+@dataclass
+class RowRenderContext:
+    "Context passed to row/item render callback."
+    
+    index: int  # Row index in the full collection
+    total_items: int  # Total item count
+    is_cursor: bool = False  # Whether this row is the keyboard cursor
+    is_first_visible: bool = False  # First row in current window
+    is_last_visible: bool = False  # Last row in current window
+```
+
+``` python
+@dataclass
+class CellRenderContext:
+    "Context passed to cell render callback."
+    
+    row_index: int  # Row index in the full collection
+    column: ColumnDef  # Column definition
+    total_items: int  # Total item count
+    is_cursor: bool = False  # Whether this row is the keyboard cursor
+```
+
+``` python
+@dataclass
+class VirtualCollectionUrls:
+    "URL bundle for HTMX endpoints."
+    
+    nav_up: str = ''  # Navigate up one row
+    nav_down: str = ''  # Navigate down one row
+    nav_page_up: str = ''  # Navigate up one page
+    nav_page_down: str = ''  # Navigate down one page
+    nav_first: str = ''  # Navigate to first row
+    nav_last: str = ''  # Navigate to last row
+    nav_to_index: str = ''  # Navigate to specific row index
+    update_viewport: str = ''  # Update visible_rows (auto-fit)
+    sort: str = ''  # Sort by column (header click)
+```
+
+#### Variables
+
+``` python
+_prefix_counter: int = 0
+```
+
+### core.windowing (`windowing.ipynb`)
+
+> Pure math functions for viewport window and scrollbar calculations.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.core.windowing import (
+    clamp_window_start,
+    compute_window,
+    compute_scrollbar,
+    navigate,
+    compute_visible_rows
+)
+```
+
+#### Functions
+
+``` python
+def clamp_window_start(window_start: int,  # Requested first visible row
+                       visible_rows: int,   # Number of visible rows
+                       total_items: int,     # Total item count
+                      ) -> int:              # Clamped window_start
+    "Clamp window_start to valid range."
+```
+
+``` python
+def compute_window(window_start: int,   # First visible row index (already clamped)
+                   visible_rows: int,    # Number of visible rows
+                   total_items: int,     # Total item count
+                  ) -> Tuple[int, int]:  # (render_start, render_end) exclusive end
+    "Compute the range of rows to render."
+```
+
+``` python
+def compute_scrollbar(window_start: int,      # First visible row index
+                      visible_rows: int,       # Number of visible rows
+                      total_items: int,        # Total item count
+                      track_height: float,     # Scrollbar track height in px
+                      min_thumb_height: int = 24,  # Minimum thumb height in px
+                     ) -> Tuple[float, float]: # (thumb_top_percent, thumb_height_percent)
+    "Compute scrollbar thumb position and size as percentages."
+```
+
+``` python
+def navigate(window_start: int,   # Current first visible row
+             direction: str,       # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
+             visible_rows: int,    # Number of visible rows
+             total_items: int,     # Total item count
+            ) -> int:              # New window_start (clamped)
+    "Compute new window_start for a navigation action."
+```
+
+``` python
+def compute_visible_rows(viewport_height: float,  # Available height in px
+                         row_height: int,          # Row height in px
+                        ) -> int:                  # Number of visible rows
+    "Compute how many rows fit in the viewport."
+```
