@@ -5,7 +5,7 @@
 # %% auto #0
 __all__ = ['render_footer']
 
-# %% ../../nbs/components/footer.ipynb #134f4ec5
+# %% ../../nbs/components/footer.ipynb #f78d4045
 from fasthtml.common import Div, Span
 
 from cjm_fasthtml_tailwind.utilities.spacing import p
@@ -17,7 +17,7 @@ from ..core.models import VirtualCollectionState
 from ..core.html_ids import VirtualCollectionHtmlIds
 from ..core.windowing import compute_window
 
-# %% ../../nbs/components/footer.ipynb #d000a75b
+# %% ../../nbs/components/footer.ipynb #cca999ea
 def render_footer(state: VirtualCollectionState,     # Collection state
                   ids: VirtualCollectionHtmlIds,      # HTML IDs
                   oob: bool = False,                  # Whether to include hx-swap-oob

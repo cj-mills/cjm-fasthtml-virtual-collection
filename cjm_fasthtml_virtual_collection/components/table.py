@@ -6,7 +6,7 @@
 __all__ = ['grid_template_columns', 'render_header_cell', 'render_header_row', 'render_data_cell', 'render_data_row',
            'render_table_rows']
 
-# %% ../../nbs/components/table.ipynb #faa4f509
+# %% ../../nbs/components/table.ipynb #78dad85f
 from typing import Any, Callable, List, Optional, Tuple
 
 from fasthtml.common import Div, Span
@@ -26,13 +26,13 @@ from cjm_fasthtml_virtual_collection.core.models import (
 )
 from ..core.html_ids import VirtualCollectionHtmlIds
 
-# %% ../../nbs/components/table.ipynb #50f7ce84
+# %% ../../nbs/components/table.ipynb #eb73d40b
 def grid_template_columns(columns: Tuple[ColumnDef, ...],  # Column definitions
                          ) -> str:  # CSS grid-template-columns value
     """Build CSS grid-template-columns from column definitions."""
     return " ".join(col.width for col in columns)
 
-# %% ../../nbs/components/table.ipynb #cb567dff
+# %% ../../nbs/components/table.ipynb #c45cb2ee
 def render_header_cell(column: ColumnDef,  # Column definition
                       ) -> Div:  # Header cell element
     """Render a single header cell."""
@@ -44,7 +44,7 @@ def render_header_cell(column: ColumnDef,  # Column definition
     )
     return Div(Span(column.header) if column.header else "", cls=cls)
 
-# %% ../../nbs/components/table.ipynb #2c045374
+# %% ../../nbs/components/table.ipynb #0eabb26b
 def render_header_row(config: VirtualCollectionConfig,  # Collection config
                       ids: VirtualCollectionHtmlIds,     # HTML IDs
                      ) -> Div:  # Header row element
@@ -58,7 +58,7 @@ def render_header_row(config: VirtualCollectionConfig,  # Collection config
         style=f"grid-template-columns: {gtc}",
     )
 
-# %% ../../nbs/components/table.ipynb #21f5dc80
+# %% ../../nbs/components/table.ipynb #b6c98199
 def render_data_cell(item: Any,                    # Data item
                      column: ColumnDef,             # Column definition
                      row_index: int,                # Row index
@@ -86,7 +86,7 @@ def render_data_cell(item: Any,                    # Data item
         cls=cls,
     )
 
-# %% ../../nbs/components/table.ipynb #35a3f741
+# %% ../../nbs/components/table.ipynb #9284c20c
 def render_data_row(item: Any,                       # Data item
                     row_index: int,                   # Row index in full collection
                     config: VirtualCollectionConfig,   # Collection config
@@ -120,7 +120,7 @@ def render_data_row(item: Any,                       # Data item
         style=f"grid-template-columns: {gtc}; height: {config.row_height}px",
     )
 
-# %% ../../nbs/components/table.ipynb #fbd02a6e
+# %% ../../nbs/components/table.ipynb #510630aa
 def render_table_rows(items: list,                       # Full item list
                       config: VirtualCollectionConfig,    # Collection config
                       state: VirtualCollectionState,      # Collection state

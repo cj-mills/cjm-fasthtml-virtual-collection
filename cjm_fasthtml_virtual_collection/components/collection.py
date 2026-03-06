@@ -5,7 +5,7 @@
 # %% auto #0
 __all__ = ['render_virtual_collection']
 
-# %% ../../nbs/components/collection.ipynb #7dd9b4e9
+# %% ../../nbs/components/collection.ipynb #e0f08a9c
 from typing import Any, Callable, List, Optional
 
 from fasthtml.common import Div
@@ -21,7 +21,7 @@ from ..core.html_ids import VirtualCollectionHtmlIds
 from .table import render_header_row, render_table_rows
 from .footer import render_footer
 
-# %% ../../nbs/components/collection.ipynb #cf6c30be
+# %% ../../nbs/components/collection.ipynb #e0eadf8a
 def render_virtual_collection(
     items: list,                                # Full item list
     config: VirtualCollectionConfig,             # Collection config
