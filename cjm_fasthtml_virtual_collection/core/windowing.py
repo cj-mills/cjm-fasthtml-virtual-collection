@@ -5,10 +5,10 @@
 # %% auto #0
 __all__ = ['clamp_window_start', 'compute_window', 'compute_scrollbar', 'navigate', 'compute_visible_rows']
 
-# %% ../../nbs/core/windowing.ipynb #de24143e
+# %% ../../nbs/core/windowing.ipynb #8340f186
 from typing import Tuple
 
-# %% ../../nbs/core/windowing.ipynb #7c6e5c1f
+# %% ../../nbs/core/windowing.ipynb #d381da31
 def clamp_window_start(window_start: int,  # Requested first visible row
                        visible_rows: int,   # Number of visible rows
                        total_items: int,     # Total item count
@@ -18,7 +18,7 @@ def clamp_window_start(window_start: int,  # Requested first visible row
     max_start = max(0, total_items - visible_rows)
     return max(0, min(window_start, max_start))
 
-# %% ../../nbs/core/windowing.ipynb #191747f6
+# %% ../../nbs/core/windowing.ipynb #a24dae6f
 def compute_window(window_start: int,   # First visible row index (already clamped)
                    visible_rows: int,    # Number of visible rows
                    total_items: int,     # Total item count
@@ -29,7 +29,7 @@ def compute_window(window_start: int,   # First visible row index (already clamp
     render_end = min(total_items, window_start + visible_rows)
     return (render_start, render_end)
 
-# %% ../../nbs/core/windowing.ipynb #61b4cb18
+# %% ../../nbs/core/windowing.ipynb #f9879d8b
 def compute_scrollbar(window_start: int,      # First visible row index
                       visible_rows: int,       # Number of visible rows
                       total_items: int,        # Total item count
@@ -54,7 +54,7 @@ def compute_scrollbar(window_start: int,      # First visible row index
 
     return (thumb_top_pct, thumb_height_pct)
 
-# %% ../../nbs/core/windowing.ipynb #4a93fc21
+# %% ../../nbs/core/windowing.ipynb #3737fb14
 def navigate(window_start: int,   # Current first visible row
              direction: str,       # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
              visible_rows: int,    # Number of visible rows
@@ -80,7 +80,7 @@ def navigate(window_start: int,   # Current first visible row
 
     return clamp_window_start(new_start, visible_rows, total_items)
 
-# %% ../../nbs/core/windowing.ipynb #2d05f4a5
+# %% ../../nbs/core/windowing.ipynb #9196024e
 def compute_visible_rows(viewport_height: float,  # Available height in px
                          row_height: int,          # Row height in px
                         ) -> int:                  # Number of visible rows

@@ -5,10 +5,10 @@
 # %% auto #0
 __all__ = ['VirtualCollectionButtonIds']
 
-# %% ../../nbs/core/button_ids.ipynb #27314839
+# %% ../../nbs/core/button_ids.ipynb #3b7b97b1
 from dataclasses import dataclass
 
-# %% ../../nbs/core/button_ids.ipynb #a891f29b
+# %% ../../nbs/core/button_ids.ipynb #24c1dec2
 @dataclass
 class VirtualCollectionButtonIds:
     """Hidden button IDs for keyboard/scroll navigation triggers."""

@@ -5,10 +5,10 @@
 # %% auto #0
 __all__ = ['VirtualCollectionHtmlIds']
 
-# %% ../../nbs/core/html_ids.ipynb #a2ec08d6
+# %% ../../nbs/core/html_ids.ipynb #9b8b9ac9
 from dataclasses import dataclass
 
-# %% ../../nbs/core/html_ids.ipynb #5e4b0dd1
+# %% ../../nbs/core/html_ids.ipynb #3d0f88b9
 @dataclass
 class VirtualCollectionHtmlIds:
     """HTML element ID generators for a virtual collection instance."""

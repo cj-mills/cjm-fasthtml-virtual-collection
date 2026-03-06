@@ -6,11 +6,11 @@
 __all__ = ['ColumnDef', 'VirtualCollectionConfig', 'VirtualCollectionState', 'RowRenderContext', 'CellRenderContext',
            'VirtualCollectionUrls']
 
-# %% ../../nbs/core/models.ipynb #78a9dd46
+# %% ../../nbs/core/models.ipynb #6cd67060
 from dataclasses import dataclass, field
 from typing import Optional, Tuple
 
-# %% ../../nbs/core/models.ipynb #bef48e82
+# %% ../../nbs/core/models.ipynb #bcf30772
 _prefix_counter: int = 0
 
 def _auto_prefix() -> str:  # Auto-generated prefix like 'vc0', 'vc1', etc.
@@ -20,7 +20,7 @@ def _auto_prefix() -> str:  # Auto-generated prefix like 'vc0', 'vc1', etc.
     _prefix_counter += 1
     return p
 
-# %% ../../nbs/core/models.ipynb #f2b4c909
+# %% ../../nbs/core/models.ipynb #43d02275
 @dataclass
 class ColumnDef:
     """Column definition for table layout."""
@@ -32,7 +32,7 @@ class ColumnDef:
     header_cls: str = ""                # Additional CSS classes for header cell
     cell_cls: str = ""                  # Additional CSS classes for data cells
 
-# %% ../../nbs/core/models.ipynb #2f8ca797
+# %% ../../nbs/core/models.ipynb #535b1c39
 @dataclass
 class VirtualCollectionConfig:
     """Initialization-time configuration for a virtual collection."""
@@ -60,7 +60,7 @@ class VirtualCollectionConfig:
         if not self.prefix:
             self.prefix = _auto_prefix()
 
-# %% ../../nbs/core/models.ipynb #ca5d56fe
+# %% ../../nbs/core/models.ipynb #93e1711b
 @dataclass
 class VirtualCollectionState:
     """Mutable runtime state for a virtual collection."""
@@ -73,7 +73,7 @@ class VirtualCollectionState:
     sort_column: str = ""               # Current sort column key (empty = unsorted)
     sort_ascending: bool = True         # Sort direction
 
-# %% ../../nbs/core/models.ipynb #82f00272
+# %% ../../nbs/core/models.ipynb #93b1336a
 @dataclass
 class RowRenderContext:
     """Context passed to row/item render callback."""
@@ -83,7 +83,7 @@ class RowRenderContext:
     is_first_visible: bool = False      # First row in current window
     is_last_visible: bool = False       # Last row in current window
 
-# %% ../../nbs/core/models.ipynb #77b8bfd8
+# %% ../../nbs/core/models.ipynb #de7b7783
 @dataclass
 class CellRenderContext:
     """Context passed to cell render callback."""
@@ -92,7 +92,7 @@ class CellRenderContext:
     total_items: int                    # Total item count
     is_cursor: bool = False             # Whether this row is the keyboard cursor
 
-# %% ../../nbs/core/models.ipynb #197458c6
+# %% ../../nbs/core/models.ipynb #07d56db4
 @dataclass
 class VirtualCollectionUrls:
     """URL bundle for HTMX endpoints."""
