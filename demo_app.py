@@ -55,7 +55,7 @@ def _generate_sample_data(count: int = 500) -> list[SampleFile]:
 
 def main():
     """Initialize virtual collection demo and start the server."""
-    from fasthtml.common import fast_app, Div, H1, H2, P, Li, Ul, Hr, A, APIRouter
+    from fasthtml.common import fast_app, Div, H1, H2, P, A, APIRouter
 
     from cjm_fasthtml_daisyui.core.resources import get_daisyui_headers
     from cjm_fasthtml_daisyui.core.testing import create_theme_persistence_script
@@ -77,7 +77,7 @@ def main():
     )
     from cjm_fasthtml_virtual_collection.core.html_ids import VirtualCollectionHtmlIds
     from cjm_fasthtml_virtual_collection.core.button_ids import VirtualCollectionButtonIds
-    from cjm_fasthtml_virtual_collection.core.windowing import compute_window
+    from cjm_fasthtml_virtual_collection.components.collection import render_virtual_collection
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -170,30 +170,49 @@ def main():
             wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
         )
 
+    # -------------------------------------------------------------------------
+    # Cell render callback
+    # -------------------------------------------------------------------------
+
+    def _format_size(size_bytes: int) -> str:
+        """Format file size for display."""
+        if size_bytes < 1024: return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024: return f"{size_bytes / 1024:.1f} KB"
+        else: return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+    def render_cell(item, ctx):
+        """Render a table cell based on column key."""
+        from fasthtml.common import Span, Input
+        from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_styles
+        if ctx.column.key == "select":
+            return Input(type="checkbox", checked=item.selected, cls="checkbox checkbox-sm")
+        elif ctx.column.key == "name":
+            return Span(item.name)
+        elif ctx.column.key == "size":
+            return Span(_format_size(item.size_bytes))
+        elif ctx.column.key == "modified":
+            return Span(item.modified)
+        elif ctx.column.key == "type":
+            return Span(item.file_type, cls=combine_classes(badge, badge_styles.ghost))
+        return Span("")
+
     @router
     def demo_table(request):
         """Table demo page — shows virtual collection with sample file data."""
 
         def table_content():
-            # Placeholder until rendering components are built (Phase 2)
-            window_start, window_end = compute_window(
-                state.window_start, state.visible_rows, state.total_items
-            )
-            rows_info = [
-                Li(f"{items[i].name} — {items[i].size_bytes:,} bytes — {items[i].modified}")
-                for i in range(window_start, window_end)
-            ]
             return Div(
                 H2("Table Demo",
                    cls=combine_classes(font_size._2xl, font_weight.bold, m.b(4))),
-                P(f"Total items: {state.total_items} | "
-                  f"Visible rows: {state.visible_rows} | "
-                  f"Window: rows {window_start}-{window_end - 1}",
+                P(f"{state.total_items:,} items · {state.visible_rows} visible rows · "
+                  f"Static window (no navigation yet)",
                   cls=combine_classes(text_dui.base_content, m.b(4))),
-                P(f"Columns: {', '.join(c.key for c in config.columns)}",
-                  cls=combine_classes(text_dui.base_content, m.b(4))),
-                Hr(),
-                Ul(*rows_info),
+
+                render_virtual_collection(
+                    items=items, config=config, state=state,
+                    ids=ids, urls=urls, render_cell=render_cell,
+                ),
+
                 cls=combine_classes(container, max_w._5xl, m.x.auto, p(4))
             )
 

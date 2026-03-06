@@ -12,25 +12,42 @@ pip install cjm_fasthtml_virtual_collection
 ## Project Structure
 
     nbs/
+    ├── components/ (3)
+    │   ├── collection.ipynb  # Main entry point for rendering a virtual collection.
+    │   ├── footer.ipynb      # Footer component showing item range indicator.
+    │   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS Grid.
     └── core/ (4)
         ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
         ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
         ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
         └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
 
-Total: 4 notebooks across 1 directory
+Total: 7 notebooks across 2 directories
 
 ## Module Dependencies
 
 ``` mermaid
 graph LR
+    components_collection[components.collection<br/>components.collection]
+    components_footer[components.footer<br/>components.footer]
+    components_table[components.table<br/>components.table]
     core_button_ids[core.button_ids<br/>core.button_ids]
     core_html_ids[core.html_ids<br/>core.html_ids]
     core_models[core.models<br/>core.models]
     core_windowing[core.windowing<br/>core.windowing]
+
+    components_collection --> core_html_ids
+    components_collection --> components_table
+    components_collection --> core_models
+    components_collection --> components_footer
+    components_footer --> core_windowing
+    components_footer --> core_html_ids
+    components_footer --> core_models
+    components_table --> core_models
+    components_table --> core_html_ids
 ```
 
-No cross-module dependencies detected.
+*9 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -87,6 +104,55 @@ class VirtualCollectionButtonIds:
         def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
     
     def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
+```
+
+### components.collection (`collection.ipynb`)
+
+> Main entry point for rendering a virtual collection.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.components.collection import (
+    render_virtual_collection
+)
+```
+
+#### Functions
+
+``` python
+def render_virtual_collection(
+    items: list,                                # Full item list
+    config: VirtualCollectionConfig,             # Collection config
+    state: VirtualCollectionState,               # Collection state
+    ids: VirtualCollectionHtmlIds,               # HTML IDs
+    urls: VirtualCollectionUrls,                 # URL bundle
+    render_cell: Optional[Callable] = None,      # Table layout cell render callback
+    render_item: Optional[Callable] = None,      # Grid layout item render callback
+) -> Div:  # Complete collection element
+    "Render a complete virtual collection with header, viewport, and footer."
+```
+
+### components.footer (`footer.ipynb`)
+
+> Footer component showing item range indicator.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.components.footer import (
+    render_footer
+)
+```
+
+#### Functions
+
+``` python
+def render_footer(state: VirtualCollectionState,     # Collection state
+                  ids: VirtualCollectionHtmlIds,      # HTML IDs
+                  oob: bool = False,                  # Whether to include hx-swap-oob
+                 ) -> Div:  # Footer element
+    "Render the footer with item range indicator."
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -294,6 +360,78 @@ class VirtualCollectionUrls:
 
 ``` python
 _prefix_counter: int = 0
+```
+
+### components.table (`table.ipynb`)
+
+> Table layout rendering: header row, data rows, and cells using CSS
+> Grid.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.components.table import (
+    grid_template_columns,
+    render_header_cell,
+    render_header_row,
+    render_data_cell,
+    render_data_row,
+    render_table_rows
+)
+```
+
+#### Functions
+
+``` python
+def grid_template_columns(columns: Tuple[ColumnDef, ...],  # Column definitions
+                         ) -> str:  # CSS grid-template-columns value
+    "Build CSS grid-template-columns from column definitions."
+```
+
+``` python
+def render_header_cell(column: ColumnDef,  # Column definition
+                      ) -> Div:  # Header cell element
+    "Render a single header cell."
+```
+
+``` python
+def render_header_row(config: VirtualCollectionConfig,  # Collection config
+                      ids: VirtualCollectionHtmlIds,     # HTML IDs
+                     ) -> Div:  # Header row element
+    "Render the table header row."
+```
+
+``` python
+def render_data_cell(item: Any,                    # Data item
+                     column: ColumnDef,             # Column definition
+                     row_index: int,                # Row index
+                     total_items: int,              # Total item count
+                     ids: VirtualCollectionHtmlIds,  # HTML IDs
+                     render_cell: Callable,          # Consumer cell render callback
+                     is_cursor: bool = False,        # Whether row is keyboard cursor
+                    ) -> Div:  # Cell element with stable ID
+    "Render a single data cell with a stable ID for OOB updates."
+```
+
+``` python
+def render_data_row(item: Any,                       # Data item
+                    row_index: int,                   # Row index in full collection
+                    config: VirtualCollectionConfig,   # Collection config
+                    state: VirtualCollectionState,     # Collection state
+                    ids: VirtualCollectionHtmlIds,     # HTML IDs
+                    render_cell: Callable,             # Consumer cell render callback
+                   ) -> Div:  # Row element with stable ID
+    "Render a single data row with all cells."
+```
+
+``` python
+def render_table_rows(items: list,                       # Full item list
+                      config: VirtualCollectionConfig,    # Collection config
+                      state: VirtualCollectionState,      # Collection state
+                      ids: VirtualCollectionHtmlIds,      # HTML IDs
+                      render_cell: Callable,              # Consumer cell render callback
+                     ) -> Div:  # Rows container (OOB swap target)
+    "Render all visible rows in the current window."
 ```
 
 ### core.windowing (`windowing.ipynb`)
