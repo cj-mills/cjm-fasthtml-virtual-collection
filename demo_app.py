@@ -55,7 +55,7 @@ def _generate_sample_data(count: int = 500) -> list[SampleFile]:
 
 def main():
     """Initialize virtual collection demo and start the server."""
-    from fasthtml.common import fast_app, Div, H1, H2, P, A, APIRouter
+    from fasthtml.common import fast_app, Div, H1, H2, P, A, Script, APIRouter
 
     from cjm_fasthtml_daisyui.core.resources import get_daisyui_headers
     from cjm_fasthtml_daisyui.core.testing import create_theme_persistence_script
@@ -71,13 +71,21 @@ def main():
     from cjm_fasthtml_app_core.core.htmx import handle_htmx_request
     from cjm_fasthtml_app_core.core.layout import wrap_with_layout
 
+    from cjm_fasthtml_keyboard_navigation.core.manager import ZoneManager
+    from cjm_fasthtml_keyboard_navigation.components.system import render_keyboard_system
+
     from cjm_fasthtml_virtual_collection.core.models import (
-        VirtualCollectionConfig, VirtualCollectionState,
-        ColumnDef, VirtualCollectionUrls,
+        VirtualCollectionConfig, VirtualCollectionState, ColumnDef,
     )
     from cjm_fasthtml_virtual_collection.core.html_ids import VirtualCollectionHtmlIds
     from cjm_fasthtml_virtual_collection.core.button_ids import VirtualCollectionButtonIds
     from cjm_fasthtml_virtual_collection.components.collection import render_virtual_collection
+    from cjm_fasthtml_virtual_collection.routes.router import init_virtual_collection_router
+    from cjm_fasthtml_virtual_collection.keyboard.actions import (
+        create_collection_focus_zone, create_collection_nav_actions,
+        build_collection_url_map,
+    )
+    from cjm_fasthtml_virtual_collection.js.scroll import generate_scroll_nav_js
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -122,10 +130,75 @@ def main():
 
     ids = VirtualCollectionHtmlIds(prefix=config.prefix)
     btn_ids = VirtualCollectionButtonIds(prefix=config.prefix)
-    urls = VirtualCollectionUrls()
 
     print(f"  Sample data: {len(items):,} items")
     print(f"  Config: prefix={config.prefix}, columns={len(config.columns)}")
+
+    # -------------------------------------------------------------------------
+    # Cell render callback
+    # -------------------------------------------------------------------------
+
+    def _format_size(size_bytes: int) -> str:
+        """Format file size for display."""
+        if size_bytes < 1024: return f"{size_bytes} B"
+        elif size_bytes < 1024 * 1024: return f"{size_bytes / 1024:.1f} KB"
+        else: return f"{size_bytes / (1024 * 1024):.1f} MB"
+
+    def render_cell(item, ctx):
+        """Render a table cell based on column key."""
+        from fasthtml.common import Span, Input
+        from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_styles
+        if ctx.column.key == "select":
+            return Input(type="checkbox", checked=item.selected, cls="checkbox checkbox-sm")
+        elif ctx.column.key == "name":
+            return Span(item.name)
+        elif ctx.column.key == "size":
+            return Span(_format_size(item.size_bytes))
+        elif ctx.column.key == "modified":
+            return Span(item.modified)
+        elif ctx.column.key == "type":
+            return Span(item.file_type, cls=combine_classes(badge, badge_styles.ghost))
+        return Span("")
+
+    # -------------------------------------------------------------------------
+    # Collection router (Tier 2 — auto-wires nav routes)
+    # -------------------------------------------------------------------------
+
+    vc_router, urls = init_virtual_collection_router(
+        config=config,
+        state_getter=lambda: state,
+        state_setter=lambda s: None,  # In-memory state, no persistence needed
+        get_items=lambda: items,
+        render_cell=render_cell,
+        route_prefix="/vc",
+    )
+
+    print(f"  Collection router: /vc")
+    print(f"  URLs: nav_up={urls.nav_up}, nav_down={urls.nav_down}")
+
+    # -------------------------------------------------------------------------
+    # Keyboard system
+    # -------------------------------------------------------------------------
+
+    zone = create_collection_focus_zone(ids)
+    nav_actions = create_collection_nav_actions(zone.id, btn_ids)
+    manager = ZoneManager(zones=(zone,), actions=nav_actions)
+
+    url_map = build_collection_url_map(btn_ids, urls)
+    target_map = {btn_id: f"#{ids.rows}" for btn_id in url_map}
+    swap_map = {btn_id: "none" for btn_id in url_map}
+
+    kb_system = render_keyboard_system(
+        manager,
+        url_map=url_map,
+        target_map=target_map,
+        swap_map=swap_map,
+    )
+
+    # Scroll wheel JS
+    scroll_js = generate_scroll_nav_js(ids, btn_ids)
+
+    print(f"  Keyboard system: {len(nav_actions)} actions, {len(url_map)} buttons")
 
     # -------------------------------------------------------------------------
     # Page routes
@@ -170,48 +243,31 @@ def main():
             wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
         )
 
-    # -------------------------------------------------------------------------
-    # Cell render callback
-    # -------------------------------------------------------------------------
-
-    def _format_size(size_bytes: int) -> str:
-        """Format file size for display."""
-        if size_bytes < 1024: return f"{size_bytes} B"
-        elif size_bytes < 1024 * 1024: return f"{size_bytes / 1024:.1f} KB"
-        else: return f"{size_bytes / (1024 * 1024):.1f} MB"
-
-    def render_cell(item, ctx):
-        """Render a table cell based on column key."""
-        from fasthtml.common import Span, Input
-        from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_styles
-        if ctx.column.key == "select":
-            return Input(type="checkbox", checked=item.selected, cls="checkbox checkbox-sm")
-        elif ctx.column.key == "name":
-            return Span(item.name)
-        elif ctx.column.key == "size":
-            return Span(_format_size(item.size_bytes))
-        elif ctx.column.key == "modified":
-            return Span(item.modified)
-        elif ctx.column.key == "type":
-            return Span(item.file_type, cls=combine_classes(badge, badge_styles.ghost))
-        return Span("")
-
     @router
     def demo_table(request):
-        """Table demo page — shows virtual collection with sample file data."""
+        """Table demo page — shows virtual collection with keyboard + wheel navigation."""
 
         def table_content():
             return Div(
                 H2("Table Demo",
                    cls=combine_classes(font_size._2xl, font_weight.bold, m.b(4))),
                 P(f"{state.total_items:,} items · {state.visible_rows} visible rows · "
-                  f"Static window (no navigation yet)",
+                  f"Arrow keys / PageUp / PageDown / Home / End / Mouse wheel to navigate",
                   cls=combine_classes(text_dui.base_content, m.b(4))),
 
+                # Virtual collection table
                 render_virtual_collection(
                     items=items, config=config, state=state,
                     ids=ids, urls=urls, render_cell=render_cell,
                 ),
+
+                # Keyboard system components
+                kb_system.script,
+                kb_system.hidden_inputs,
+                kb_system.action_buttons,
+
+                # Scroll wheel navigation
+                Script(scroll_js),
 
                 cls=combine_classes(container, max_w._5xl, m.x.auto, p(4))
             )
@@ -235,7 +291,7 @@ def main():
         theme_selector=True
     )
 
-    register_routes(app, router)
+    register_routes(app, router, vc_router)
 
     # Debug output
     print("\n" + "=" * 70)

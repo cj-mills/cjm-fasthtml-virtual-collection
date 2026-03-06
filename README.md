@@ -16,13 +16,20 @@ pip install cjm_fasthtml_virtual_collection
     │   ├── collection.ipynb  # Main entry point for rendering a virtual collection.
     │   ├── footer.ipynb      # Footer component showing item range indicator.
     │   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS Grid.
-    └── core/ (4)
-        ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
-        ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
-        ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
-        └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
+    ├── core/ (4)
+    │   ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
+    │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
+    │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
+    │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
+    ├── js/ (1)
+    │   └── scroll.ipynb  # JavaScript generator for scroll wheel to navigation conversion.
+    ├── keyboard/ (1)
+    │   └── actions.ipynb  # Keyboard navigation focus zone and action factories for the virtual collection.
+    └── routes/ (2)
+        ├── handlers.ipynb  # Response builder functions for virtual collection navigation (Tier 1 API).
+        └── router.ipynb    # Convenience router factory that wires up standard virtual collection routes (Tier 2 API).
 
-Total: 7 notebooks across 2 directories
+Total: 11 notebooks across 5 directories
 
 ## Module Dependencies
 
@@ -35,19 +42,36 @@ graph LR
     core_html_ids[core.html_ids<br/>core.html_ids]
     core_models[core.models<br/>core.models]
     core_windowing[core.windowing<br/>core.windowing]
+    js_scroll[js.scroll<br/>js.scroll]
+    keyboard_actions[keyboard.actions<br/>keyboard.actions]
+    routes_handlers[routes.handlers<br/>routes.handlers]
+    routes_router[routes.router<br/>routes.router]
 
     components_collection --> core_html_ids
-    components_collection --> components_table
     components_collection --> core_models
+    components_collection --> components_table
     components_collection --> components_footer
-    components_footer --> core_windowing
     components_footer --> core_html_ids
     components_footer --> core_models
-    components_table --> core_models
+    components_footer --> core_windowing
     components_table --> core_html_ids
+    components_table --> core_models
+    js_scroll --> core_html_ids
+    js_scroll --> core_button_ids
+    keyboard_actions --> core_html_ids
+    keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
+    routes_handlers --> core_windowing
+    routes_handlers --> core_html_ids
+    routes_handlers --> core_models
+    routes_handlers --> components_table
+    routes_handlers --> components_footer
+    routes_router --> core_html_ids
+    routes_router --> core_models
+    routes_router --> routes_handlers
 ```
 
-*9 cross-module dependencies detected*
+*22 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -56,6 +80,48 @@ No CLI commands found in this project.
 ## Module Overview
 
 Detailed documentation for each module in the project:
+
+### keyboard.actions (`actions.ipynb`)
+
+> Keyboard navigation focus zone and action factories for the virtual
+> collection.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.keyboard.actions import (
+    create_collection_focus_zone,
+    create_collection_nav_actions,
+    build_collection_url_map
+)
+```
+
+#### Functions
+
+``` python
+def create_collection_focus_zone(
+    ids: VirtualCollectionHtmlIds,  # HTML IDs for this collection instance
+    hidden_input_prefix: Optional[str] = None,  # Prefix for keyboard nav hidden inputs
+) -> FocusZone:  # Configured focus zone for the collection
+    "Create a focus zone for a virtual collection viewport."
+```
+
+``` python
+def create_collection_nav_actions(
+    zone_id: str,  # Focus zone ID to restrict actions to
+    button_ids: VirtualCollectionButtonIds,  # Button IDs for HTMX triggers
+    disable_in_modes: Tuple[str, ...] = (),  # Mode names that disable navigation
+) -> Tuple[KeyAction, ...]:  # Standard collection navigation actions
+    "Create standard keyboard navigation actions for a virtual collection."
+```
+
+``` python
+def build_collection_url_map(
+    button_ids: VirtualCollectionButtonIds,  # Button IDs for this collection
+    urls: VirtualCollectionUrls,  # URL bundle for routing
+) -> Dict[str, str]:  # Mapping of button ID -> route URL
+    "Build url_map for render_keyboard_system with all collection navigation buttons."
+```
 
 ### core.button_ids (`button_ids.ipynb`)
 
@@ -153,6 +219,72 @@ def render_footer(state: VirtualCollectionState,     # Collection state
                   oob: bool = False,                  # Whether to include hx-swap-oob
                  ) -> Div:  # Footer element
     "Render the footer with item range indicator."
+```
+
+### routes.handlers (`handlers.ipynb`)
+
+> Response builder functions for virtual collection navigation (Tier 1
+> API).
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.routes.handlers import (
+    build_nav_response,
+    handle_navigate,
+    handle_navigate_to_index,
+    handle_update_viewport
+)
+```
+
+#### Functions
+
+``` python
+def build_nav_response(
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (already mutated)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+) -> Tuple:  # OOB elements (rows + footer)
+    "Build OOB response for navigation: rows + footer."
+```
+
+``` python
+def handle_navigate(
+    direction: str,                         # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+) -> Tuple:  # OOB elements (rows + footer)
+    "Navigate in a direction. Mutates state.window_start in place."
+```
+
+``` python
+def handle_navigate_to_index(
+    target_index: int,                      # Target window_start
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+) -> Tuple:  # OOB elements (rows + footer)
+    "Navigate to a specific index. Mutates state.window_start in place."
+```
+
+``` python
+def handle_update_viewport(
+    visible_rows: int,                      # New visible row count
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    is_auto: bool = True,                   # Whether from auto-fit
+) -> Tuple:  # OOB elements (rows + footer)
+    "Update viewport with new row count. Mutates state in place."
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -360,6 +492,67 @@ class VirtualCollectionUrls:
 
 ``` python
 _prefix_counter: int = 0
+```
+
+### routes.router (`router.ipynb`)
+
+> Convenience router factory that wires up standard virtual collection
+> routes (Tier 2 API).
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.routes.router import (
+    init_virtual_collection_router
+)
+```
+
+#### Functions
+
+``` python
+def init_virtual_collection_router(
+    config: VirtualCollectionConfig,                    # Collection config
+    state_getter: Callable[[], VirtualCollectionState],  # Function to get current state
+    state_setter: Callable[[VirtualCollectionState], None],  # Function to save state
+    get_items: Callable[[], list],                       # Function to get current items
+    render_cell: Callable,                               # Cell render callback
+    route_prefix: str = "/collection",                   # Route prefix
+) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
+    "Initialize an APIRouter with all standard virtual collection routes."
+```
+
+### js.scroll (`scroll.ipynb`)
+
+> JavaScript generator for scroll wheel to navigation conversion.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.js.scroll import (
+    SCROLL_THRESHOLD,
+    NAVIGATION_COOLDOWN,
+    TRACKPAD_COOLDOWN,
+    generate_scroll_nav_js
+)
+```
+
+#### Functions
+
+``` python
+def generate_scroll_nav_js(
+    ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
+    button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers
+    disable_in_modes: Tuple[str, ...] = (),  # Mode names where scroll is suppressed
+) -> str:  # JavaScript code fragment
+    "Generate JS for scroll wheel to navigation conversion."
+```
+
+#### Variables
+
+``` python
+SCROLL_THRESHOLD = 1  # Minimum accumulated delta to trigger navigation (px)
+NAVIGATION_COOLDOWN = 100  # Mouse wheel cooldown (ms)
+TRACKPAD_COOLDOWN = 250  # Trackpad cooldown (ms) — higher to prevent rapid-fire
 ```
 
 ### components.table (`table.ipynb`)
