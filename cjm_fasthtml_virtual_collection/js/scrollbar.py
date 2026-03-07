@@ -5,12 +5,12 @@
 # %% auto #0
 __all__ = ['generate_scrollbar_js']
 
-# %% ../../nbs/js/scrollbar.ipynb #64e2c7c0
+# %% ../../nbs/js/scrollbar.ipynb #b7edf2cc
 from ..core.html_ids import VirtualCollectionHtmlIds
 from ..core.button_ids import VirtualCollectionButtonIds
 from ..core.models import VirtualCollectionUrls
 
-# %% ../../nbs/js/scrollbar.ipynb #b3e3ca26
+# %% ../../nbs/js/scrollbar.ipynb #9c06d0b6
 def generate_scrollbar_js(
     ids: VirtualCollectionHtmlIds,   # HTML IDs for this collection
     urls: VirtualCollectionUrls,     # URL bundle (for nav_to_index)

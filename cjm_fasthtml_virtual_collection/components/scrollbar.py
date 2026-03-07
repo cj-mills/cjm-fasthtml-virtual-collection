@@ -5,7 +5,7 @@
 # %% auto #0
 __all__ = ['render_scrollbar_thumb', 'render_scrollbar']
 
-# %% ../../nbs/components/scrollbar.ipynb #cc5726fe
+# %% ../../nbs/components/scrollbar.ipynb #4f4abe73
 from fasthtml.common import Div
 
 from cjm_fasthtml_tailwind.utilities.sizing import w, h
@@ -21,7 +21,7 @@ from ..core.models import VirtualCollectionConfig, VirtualCollectionState
 from ..core.html_ids import VirtualCollectionHtmlIds
 from ..core.windowing import compute_scrollbar
 
-# %% ../../nbs/components/scrollbar.ipynb #68eb98ff
+# %% ../../nbs/components/scrollbar.ipynb #c3d7bdfa
 def render_scrollbar_thumb(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
@@ -50,7 +50,7 @@ def render_scrollbar_thumb(
 
     return thumb
 
-# %% ../../nbs/components/scrollbar.ipynb #502f2a2e
+# %% ../../nbs/components/scrollbar.ipynb #c126a242
 def render_scrollbar(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
