@@ -22,7 +22,8 @@ pip install cjm_fasthtml_virtual_collection
     │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
     │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
     │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
-    ├── js/ (2)
+    ├── js/ (3)
+    │   ├── auto_fit.ipynb   # JavaScript generator for automatic visible row count adjustment based on viewport height.
     │   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
     │   └── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
     ├── keyboard/ (1)
@@ -31,7 +32,7 @@ pip install cjm_fasthtml_virtual_collection
         ├── handlers.ipynb  # Response builder functions for virtual collection navigation (Tier 1 API).
         └── router.ipynb    # Convenience router factory that wires up standard virtual collection routes (Tier 2 API).
 
-Total: 13 notebooks across 5 directories
+Total: 14 notebooks across 5 directories
 
 ## Module Dependencies
 
@@ -45,6 +46,7 @@ graph LR
     core_html_ids[core.html_ids<br/>core.html_ids]
     core_models[core.models<br/>core.models]
     core_windowing[core.windowing<br/>core.windowing]
+    js_auto_fit[js.auto_fit<br/>js.auto_fit]
     js_scroll[js.scroll<br/>js.scroll]
     js_scrollbar[js.scrollbar<br/>js.scrollbar]
     keyboard_actions[keyboard.actions<br/>keyboard.actions]
@@ -52,37 +54,39 @@ graph LR
     routes_router[routes.router<br/>routes.router]
 
     components_collection --> core_models
-    components_collection --> components_table
-    components_collection --> components_scrollbar
     components_collection --> components_footer
     components_collection --> core_html_ids
+    components_collection --> components_table
+    components_collection --> components_scrollbar
     components_footer --> core_models
-    components_footer --> core_html_ids
     components_footer --> core_windowing
-    components_scrollbar --> core_windowing
+    components_footer --> core_html_ids
     components_scrollbar --> core_models
+    components_scrollbar --> core_windowing
     components_scrollbar --> core_html_ids
     components_table --> core_models
     components_table --> core_html_ids
+    js_auto_fit --> core_models
+    js_auto_fit --> core_html_ids
     js_scroll --> core_button_ids
     js_scroll --> core_html_ids
+    js_scrollbar --> core_models
     js_scrollbar --> core_button_ids
     js_scrollbar --> core_html_ids
-    js_scrollbar --> core_models
+    keyboard_actions --> core_models
     keyboard_actions --> core_button_ids
     keyboard_actions --> core_html_ids
-    keyboard_actions --> core_models
-    routes_handlers --> core_models
     routes_handlers --> core_windowing
-    routes_handlers --> components_table
+    routes_handlers --> core_models
     routes_handlers --> components_footer
     routes_handlers --> core_html_ids
-    routes_router --> core_models
+    routes_handlers --> components_table
     routes_router --> routes_handlers
+    routes_router --> core_models
     routes_router --> core_html_ids
 ```
 
-*29 cross-module dependencies detected*
+*31 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -132,6 +136,44 @@ def build_collection_url_map(
     urls: VirtualCollectionUrls,  # URL bundle for routing
 ) -> Dict[str, str]:  # Mapping of button ID -> route URL
     "Build url_map for render_keyboard_system with all collection navigation buttons."
+```
+
+### js.auto_fit (`auto_fit.ipynb`)
+
+> JavaScript generator for automatic visible row count adjustment based
+> on viewport height.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.js.auto_fit import (
+    generate_auto_fit_js,
+    auto_fit_callback_name
+)
+```
+
+#### Functions
+
+``` python
+def generate_auto_fit_js(
+    ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
+    config: VirtualCollectionConfig,      # Collection config (for row_height)
+    urls: VirtualCollectionUrls,          # URL bundle (for update_viewport)
+    debug: bool = False,                  # Enable console.log debugging
+) -> str:  # JavaScript code fragment
+    """
+    Generate JS for auto-fitting visible row count to viewport height.
+    
+    Uses ResizeObserver on the viewport element to detect height changes from
+    viewport-fit. Pure arithmetic: visibleRows = floor(viewportHeight / rowHeight).
+    """
+```
+
+``` python
+def auto_fit_callback_name(
+    config: VirtualCollectionConfig,  # Collection config (for prefix)
+) -> str:  # Global JS function name
+    "Get the global callback name for viewport-fit's resize_callback."
 ```
 
 ### core.button_ids (`button_ids.ipynb`)

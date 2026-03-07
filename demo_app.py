@@ -87,6 +87,10 @@ def main():
     )
     from cjm_fasthtml_virtual_collection.js.scroll import generate_scroll_nav_js
     from cjm_fasthtml_virtual_collection.js.scrollbar import generate_scrollbar_js
+    from cjm_fasthtml_virtual_collection.js.auto_fit import generate_auto_fit_js, auto_fit_callback_name
+
+    from cjm_fasthtml_viewport_fit.models import ViewportFitConfig
+    from cjm_fasthtml_viewport_fit.components import render_viewport_fit_script
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -219,11 +223,21 @@ def main():
         swap_map=swap_map,
     )
 
-    # Scroll wheel JS + scrollbar JS
+    # Scroll wheel JS + scrollbar JS + auto-fit JS
     scroll_js = generate_scroll_nav_js(ids, btn_ids)
     scrollbar_js = generate_scrollbar_js(ids, urls)
+    auto_fit_js = generate_auto_fit_js(ids, config, urls)
+
+    # Viewport-fit config — constrain viewport to available height, trigger auto-fit on resize
+    vf_config = ViewportFitConfig(
+        namespace=config.prefix,
+        target_id=ids.viewport,
+        resize_callback=auto_fit_callback_name(config),
+        debug=False,
+    )
 
     print(f"  Keyboard system: {len(nav_actions)} actions, {len(url_map)} buttons")
+    print(f"  Viewport-fit: target={ids.viewport}, auto-fit callback={auto_fit_callback_name(config)}")
 
     # -------------------------------------------------------------------------
     # Page routes
@@ -276,8 +290,8 @@ def main():
             return Div(
                 H2("Table Demo",
                    cls=combine_classes(font_size._2xl, font_weight.bold, m.b(4))),
-                P(f"{state.total_items:,} items · {state.visible_rows} visible rows · "
-                  f"Arrow keys / PageUp / PageDown / Home / End / Mouse wheel to navigate",
+                P(f"{state.total_items:,} items · Auto-fit rows to viewport · "
+                  f"Arrow keys / PageUp / PageDown / Home / End / Mouse wheel",
                   cls=combine_classes(text_dui.base_content, m.b(4))),
 
                 # Virtual collection table
@@ -291,9 +305,11 @@ def main():
                 kb_system.hidden_inputs,
                 kb_system.action_buttons,
 
-                # Scroll wheel + scrollbar interaction JS
+                # Scroll wheel + scrollbar + auto-fit + viewport-fit JS
                 Script(scroll_js),
                 Script(scrollbar_js),
+                Script(auto_fit_js),
+                render_viewport_fit_script(vf_config),
 
                 cls=combine_classes(container, max_w._5xl, m.x.auto, p(4))
             )
