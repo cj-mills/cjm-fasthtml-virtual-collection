@@ -51,11 +51,11 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_scrollbar
     components_collection --> core_models
-    components_collection --> core_html_ids
-    components_collection --> components_footer
     components_collection --> components_table
+    components_collection --> components_scrollbar
+    components_collection --> components_footer
+    components_collection --> core_html_ids
     components_footer --> core_models
     components_footer --> core_html_ids
     components_footer --> core_windowing
@@ -64,21 +64,21 @@ graph LR
     components_scrollbar --> core_html_ids
     components_table --> core_models
     components_table --> core_html_ids
-    js_scroll --> core_html_ids
     js_scroll --> core_button_ids
-    js_scrollbar --> core_models
-    js_scrollbar --> core_html_ids
+    js_scroll --> core_html_ids
     js_scrollbar --> core_button_ids
-    keyboard_actions --> core_models
-    keyboard_actions --> core_html_ids
+    js_scrollbar --> core_html_ids
+    js_scrollbar --> core_models
     keyboard_actions --> core_button_ids
-    routes_handlers --> core_windowing
+    keyboard_actions --> core_html_ids
+    keyboard_actions --> core_models
     routes_handlers --> core_models
-    routes_handlers --> core_html_ids
-    routes_handlers --> components_footer
+    routes_handlers --> core_windowing
     routes_handlers --> components_table
-    routes_router --> routes_handlers
+    routes_handlers --> components_footer
+    routes_handlers --> core_html_ids
     routes_router --> core_models
+    routes_router --> routes_handlers
     routes_router --> core_html_ids
 ```
 
@@ -647,7 +647,9 @@ from cjm_fasthtml_virtual_collection.components.table import (
     render_header_row,
     render_data_cell,
     render_data_row,
-    render_table_rows
+    render_table_rows,
+    render_cell_oob,
+    render_row_oob
 )
 ```
 
@@ -703,6 +705,29 @@ def render_table_rows(items: list,                       # Full item list
                       render_cell: Callable,              # Consumer cell render callback
                      ) -> Div:  # Rows container (OOB swap target)
     "Render all visible rows in the current window."
+```
+
+``` python
+def render_cell_oob(item: Any,                       # Data item
+                    column: ColumnDef,                # Column to render
+                    row_index: int,                   # Row index
+                    total_items: int,                 # Total item count
+                    ids: VirtualCollectionHtmlIds,    # HTML IDs
+                    render_cell: Callable,            # Consumer cell render callback
+                    is_cursor: bool = False,          # Whether row is keyboard cursor
+                   ) -> Div:  # Cell element with hx-swap-oob
+    "Render a single cell with OOB swap for targeted update."
+```
+
+``` python
+def render_row_oob(item: Any,                       # Data item
+                   row_index: int,                   # Row index
+                   config: VirtualCollectionConfig,  # Collection config
+                   state: VirtualCollectionState,    # Collection state
+                   ids: VirtualCollectionHtmlIds,    # HTML IDs
+                   render_cell: Callable,            # Consumer cell render callback
+                  ) -> Div:  # Row element with hx-swap-oob
+    "Render a full row with OOB swap for targeted update."
 ```
 
 ### core.windowing (`windowing.ipynb`)

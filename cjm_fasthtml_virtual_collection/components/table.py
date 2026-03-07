@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['grid_template_columns', 'render_header_cell', 'render_header_row', 'render_data_cell', 'render_data_row',
-           'render_table_rows']
+           'render_table_rows', 'render_cell_oob', 'render_row_oob']
 
 # %% ../../nbs/components/table.ipynb #78dad85f
 from typing import Any, Callable, List, Optional, Tuple
@@ -96,8 +96,6 @@ def render_data_row(item: Any,                       # Data item
     """Render a single data row with all cells."""
     gtc = grid_template_columns(config.columns)
     is_cursor = (row_index == state.cursor_index)
-    is_first = (row_index == state.window_start)
-    is_last = (row_index == state.window_start + state.visible_rows - 1)
 
     cells = [
         render_data_cell(
@@ -109,7 +107,7 @@ def render_data_row(item: Any,                       # Data item
     row_cls = combine_classes(
         grid_display, items.center,
         border.b(), border_dui.base_200,
-        bg_dui.primary.with_opacity(10) if is_cursor else None,
+        bg_dui.primary.opacity(10) if is_cursor else None,
     )
 
     return Div(
@@ -139,3 +137,30 @@ def render_table_rows(items: list,                       # Full item list
     ]
 
     return Div(*rows, id=ids.rows)
+
+# %% ../../nbs/components/table.ipynb #gsvxddb56a8
+def render_cell_oob(item: Any,                       # Data item
+                    column: ColumnDef,                # Column to render
+                    row_index: int,                   # Row index
+                    total_items: int,                 # Total item count
+                    ids: VirtualCollectionHtmlIds,    # HTML IDs
+                    render_cell: Callable,            # Consumer cell render callback
+                    is_cursor: bool = False,          # Whether row is keyboard cursor
+                   ) -> Div:  # Cell element with hx-swap-oob
+    """Render a single cell with OOB swap for targeted update."""
+    cell = render_data_cell(item, column, row_index, total_items, ids, render_cell, is_cursor)
+    cell.attrs["hx-swap-oob"] = "outerHTML"
+    return cell
+
+
+def render_row_oob(item: Any,                       # Data item
+                   row_index: int,                   # Row index
+                   config: VirtualCollectionConfig,  # Collection config
+                   state: VirtualCollectionState,    # Collection state
+                   ids: VirtualCollectionHtmlIds,    # HTML IDs
+                   render_cell: Callable,            # Consumer cell render callback
+                  ) -> Div:  # Row element with hx-swap-oob
+    """Render a full row with OOB swap for targeted update."""
+    row = render_data_row(item, row_index, config, state, ids, render_cell)
+    row.attrs["hx-swap-oob"] = "outerHTML"
+    return row

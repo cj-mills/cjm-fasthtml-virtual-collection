@@ -150,7 +150,12 @@ def main():
         from fasthtml.common import Span, Input
         from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_styles
         if ctx.column.key == "select":
-            return Input(type="checkbox", checked=item.selected, cls="checkbox checkbox-sm")
+            return Input(
+                type="checkbox", checked=item.selected,
+                cls="checkbox checkbox-sm",
+                hx_post=f"/select?row_index={ctx.row_index}",
+                hx_swap="none",
+            )
         elif ctx.column.key == "name":
             return Span(item.name)
         elif ctx.column.key == "size":
@@ -176,6 +181,24 @@ def main():
 
     print(f"  Collection router: /vc")
     print(f"  URLs: nav_up={urls.nav_up}, nav_down={urls.nav_down}")
+
+    # -------------------------------------------------------------------------
+    # Click-to-select route (cell-level OOB demo)
+    # -------------------------------------------------------------------------
+
+    from cjm_fasthtml_virtual_collection.components.table import render_cell_oob
+
+    @router
+    def select(row_index: int):
+        """Toggle selection on a row — returns only the affected checkbox cell via OOB."""
+        items[row_index].selected = not items[row_index].selected
+        select_col = config.columns[0]  # "select" column
+        return render_cell_oob(
+            items[row_index], select_col, row_index,
+            state.total_items, ids, render_cell,
+        )
+
+    print(f"  Select route: /select")
 
     # -------------------------------------------------------------------------
     # Keyboard system
