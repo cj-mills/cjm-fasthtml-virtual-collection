@@ -12,24 +12,26 @@ pip install cjm_fasthtml_virtual_collection
 ## Project Structure
 
     nbs/
-    ├── components/ (3)
+    ├── components/ (4)
     │   ├── collection.ipynb  # Main entry point for rendering a virtual collection.
     │   ├── footer.ipynb      # Footer component showing item range indicator.
+    │   ├── scrollbar.ipynb   # Custom scrollbar component with proportional thumb for position indication.
     │   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS Grid.
     ├── core/ (4)
     │   ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
     │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
     │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
     │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
-    ├── js/ (1)
-    │   └── scroll.ipynb  # JavaScript generator for scroll wheel to navigation conversion.
+    ├── js/ (2)
+    │   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
+    │   └── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
     ├── keyboard/ (1)
     │   └── actions.ipynb  # Keyboard navigation focus zone and action factories for the virtual collection.
     └── routes/ (2)
         ├── handlers.ipynb  # Response builder functions for virtual collection navigation (Tier 1 API).
         └── router.ipynb    # Convenience router factory that wires up standard virtual collection routes (Tier 2 API).
 
-Total: 11 notebooks across 5 directories
+Total: 13 notebooks across 5 directories
 
 ## Module Dependencies
 
@@ -37,41 +39,50 @@ Total: 11 notebooks across 5 directories
 graph LR
     components_collection[components.collection<br/>components.collection]
     components_footer[components.footer<br/>components.footer]
+    components_scrollbar[components.scrollbar<br/>components.scrollbar]
     components_table[components.table<br/>components.table]
     core_button_ids[core.button_ids<br/>core.button_ids]
     core_html_ids[core.html_ids<br/>core.html_ids]
     core_models[core.models<br/>core.models]
     core_windowing[core.windowing<br/>core.windowing]
     js_scroll[js.scroll<br/>js.scroll]
+    js_scrollbar[js.scrollbar<br/>js.scrollbar]
     keyboard_actions[keyboard.actions<br/>keyboard.actions]
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> core_html_ids
+    components_collection --> components_scrollbar
     components_collection --> core_models
-    components_collection --> components_table
+    components_collection --> core_html_ids
     components_collection --> components_footer
-    components_footer --> core_html_ids
+    components_collection --> components_table
     components_footer --> core_models
+    components_footer --> core_html_ids
     components_footer --> core_windowing
-    components_table --> core_html_ids
+    components_scrollbar --> core_windowing
+    components_scrollbar --> core_models
+    components_scrollbar --> core_html_ids
     components_table --> core_models
+    components_table --> core_html_ids
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
-    keyboard_actions --> core_html_ids
+    js_scrollbar --> core_models
+    js_scrollbar --> core_html_ids
+    js_scrollbar --> core_button_ids
     keyboard_actions --> core_models
+    keyboard_actions --> core_html_ids
     keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
-    routes_handlers --> core_html_ids
     routes_handlers --> core_models
-    routes_handlers --> components_table
+    routes_handlers --> core_html_ids
     routes_handlers --> components_footer
-    routes_router --> core_html_ids
-    routes_router --> core_models
+    routes_handlers --> components_table
     routes_router --> routes_handlers
+    routes_router --> core_models
+    routes_router --> core_html_ids
 ```
 
-*22 cross-module dependencies detected*
+*29 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -196,7 +207,7 @@ def render_virtual_collection(
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
 ) -> Div:  # Complete collection element
-    "Render a complete virtual collection with header, viewport, and footer."
+    "Render a complete virtual collection with header, viewport, scrollbar, and footer."
 ```
 
 ### components.footer (`footer.ipynb`)
@@ -240,14 +251,22 @@ from cjm_fasthtml_virtual_collection.routes.handlers import (
 #### Functions
 
 ``` python
+def _render_window_start_oob(
+    state: VirtualCollectionState,     # Current state
+    ids: VirtualCollectionHtmlIds,     # HTML IDs
+) -> Hidden:  # Hidden input with OOB swap
+    "Render OOB hidden input carrying the current window_start for JS thumb positioning."
+```
+
+``` python
 def build_nav_response(
     items: list,                            # Full item list
     state: VirtualCollectionState,          # Current state (already mutated)
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer)
-    "Build OOB response for navigation: rows + footer."
+) -> Tuple:  # OOB elements (rows + footer + window_start input)
+    "Build OOB response for navigation: rows + footer + window_start hidden input."
 ```
 
 ``` python
@@ -553,6 +572,65 @@ def generate_scroll_nav_js(
 SCROLL_THRESHOLD = 1  # Minimum accumulated delta to trigger navigation (px)
 NAVIGATION_COOLDOWN = 100  # Mouse wheel cooldown (ms)
 TRACKPAD_COOLDOWN = 250  # Trackpad cooldown (ms) — higher to prevent rapid-fire
+```
+
+### components.scrollbar (`scrollbar.ipynb`)
+
+> Custom scrollbar component with proportional thumb for position
+> indication.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.components.scrollbar import (
+    render_scrollbar_thumb,
+    render_scrollbar
+)
+```
+
+#### Functions
+
+``` python
+def render_scrollbar_thumb(
+    state: VirtualCollectionState,       # Collection state
+    config: VirtualCollectionConfig,      # Collection config
+    ids: VirtualCollectionHtmlIds,        # HTML IDs
+    track_height: float = 600.0,          # Track height for min thumb calculation
+    oob: bool = False,                    # Whether to include hx-swap-oob
+) -> Div:  # Thumb element
+    "Render the scrollbar thumb at the correct position."
+```
+
+``` python
+def render_scrollbar(
+    state: VirtualCollectionState,       # Collection state
+    config: VirtualCollectionConfig,      # Collection config
+    ids: VirtualCollectionHtmlIds,        # HTML IDs
+) -> Div:  # Complete scrollbar (track + thumb)
+    "Render the custom scrollbar with track and proportional thumb."
+```
+
+### js.scrollbar (`scrollbar.ipynb`)
+
+> JavaScript generator for custom scrollbar interaction (drag thumb,
+> click track).
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.js.scrollbar import (
+    generate_scrollbar_js
+)
+```
+
+#### Functions
+
+``` python
+def generate_scrollbar_js(
+    ids: VirtualCollectionHtmlIds,   # HTML IDs for this collection
+    urls: VirtualCollectionUrls,     # URL bundle (for nav_to_index)
+) -> str:  # JavaScript code fragment
+    "Generate JS for custom scrollbar: thumb positioning from hidden input + drag/click interaction."
 ```
 
 ### components.table (`table.ipynb`)

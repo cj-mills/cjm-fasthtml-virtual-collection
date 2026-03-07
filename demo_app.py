@@ -86,6 +86,7 @@ def main():
         build_collection_url_map,
     )
     from cjm_fasthtml_virtual_collection.js.scroll import generate_scroll_nav_js
+    from cjm_fasthtml_virtual_collection.js.scrollbar import generate_scrollbar_js
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -116,10 +117,10 @@ def main():
         row_height=40,
         columns=(
             ColumnDef(key="select", header="", width="40px"),
-            ColumnDef(key="name", header="Name", width="1fr", sortable=True),
+            ColumnDef(key="name", header="Name", width="1fr", sortable=True, cell_cls="truncate"),
             ColumnDef(key="size", header="Size", width="100px", sortable=True),
             ColumnDef(key="modified", header="Modified", width="120px", sortable=True),
-            ColumnDef(key="type", header="Type", width="80px"),
+            ColumnDef(key="type", header="Type", width="100px"),
         ),
     )
 
@@ -195,8 +196,9 @@ def main():
         swap_map=swap_map,
     )
 
-    # Scroll wheel JS
+    # Scroll wheel JS + scrollbar JS
     scroll_js = generate_scroll_nav_js(ids, btn_ids)
+    scrollbar_js = generate_scrollbar_js(ids, urls)
 
     print(f"  Keyboard system: {len(nav_actions)} actions, {len(url_map)} buttons")
 
@@ -266,8 +268,9 @@ def main():
                 kb_system.hidden_inputs,
                 kb_system.action_buttons,
 
-                # Scroll wheel navigation
+                # Scroll wheel + scrollbar interaction JS
                 Script(scroll_js),
+                Script(scrollbar_js),
 
                 cls=combine_classes(container, max_w._5xl, m.x.auto, p(4))
             )

@@ -8,7 +8,7 @@ __all__ = ['render_virtual_collection']
 # %% ../../nbs/components/collection.ipynb #e0f08a9c
 from typing import Any, Callable, List, Optional
 
-from fasthtml.common import Div
+from fasthtml.common import Div, Hidden
 
 from cjm_fasthtml_tailwind.utilities.layout import overflow
 from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import flex_display, flex_direction, flex
@@ -20,6 +20,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 from .table import render_header_row, render_table_rows
 from .footer import render_footer
+from .scrollbar import render_scrollbar
 
 # %% ../../nbs/components/collection.ipynb #e0eadf8a
 def render_virtual_collection(
@@ -31,7 +32,7 @@ def render_virtual_collection(
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
 ) -> Div:  # Complete collection element
-    """Render a complete virtual collection with header, viewport, and footer."""
+    """Render a complete virtual collection with header, viewport, scrollbar, and footer."""
     children = []
 
     if config.layout == "table":
@@ -40,14 +41,21 @@ def render_virtual_collection(
         # Header (fixed, outside viewport)
         children.append(render_header_row(config, ids))
 
-        # Viewport body (rows + scrollbar placeholder)
+        # Viewport body (rows) + scrollbar side-by-side
         rows = render_table_rows(items, config, state, ids, render_cell)
         viewport = Div(
             rows,
             id=ids.viewport,
             cls=combine_classes(flex(1), overflow.hidden),
         )
-        children.append(viewport)
+
+        if config.show_scrollbar and state.total_items > state.visible_rows:
+            scrollbar = render_scrollbar(state, config, ids)
+            body = Div(viewport, scrollbar, cls=combine_classes(flex_display))
+        else:
+            body = viewport
+
+        children.append(body)
 
     elif config.layout == "grid":
         raise NotImplementedError("Grid layout will be added in Phase 14")
@@ -56,6 +64,13 @@ def render_virtual_collection(
 
     # Footer
     children.append(render_footer(state, ids))
+
+    # Hidden input for JS thumb positioning (OOB-updated on navigation)
+    children.append(Hidden(
+        value=str(state.window_start),
+        id=ids.window_start_input,
+        name="window_start",
+    ))
 
     return Div(
         *children,

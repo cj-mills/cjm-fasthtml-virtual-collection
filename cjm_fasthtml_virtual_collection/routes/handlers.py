@@ -8,6 +8,8 @@ __all__ = ['build_nav_response', 'handle_navigate', 'handle_navigate_to_index', 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
 from typing import Any, Callable, List, Tuple
 
+from fasthtml.common import Hidden
+
 from cjm_fasthtml_virtual_collection.core.models import (
     VirtualCollectionConfig, VirtualCollectionState, VirtualCollectionUrls,
 )
@@ -17,20 +19,35 @@ from ..components.table import render_table_rows
 from ..components.footer import render_footer
 
 # %% ../../nbs/routes/handlers.ipynb #2adaa2a1
+def _render_window_start_oob(
+    state: VirtualCollectionState,     # Current state
+    ids: VirtualCollectionHtmlIds,     # HTML IDs
+) -> Hidden:  # Hidden input with OOB swap
+    """Render OOB hidden input carrying the current window_start for JS thumb positioning."""
+    return Hidden(
+        value=str(state.window_start),
+        id=ids.window_start_input,
+        name="window_start",
+        hx_swap_oob="outerHTML",
+    )
+
+
 def build_nav_response(
     items: list,                            # Full item list
     state: VirtualCollectionState,          # Current state (already mutated)
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer)
-    """Build OOB response for navigation: rows + footer."""
+) -> Tuple:  # OOB elements (rows + footer + window_start input)
+    """Build OOB response for navigation: rows + footer + window_start hidden input."""
     rows_oob = render_table_rows(items, config, state, ids, render_cell)
     rows_oob.attrs["hx-swap-oob"] = "innerHTML"
 
     footer_oob = render_footer(state, ids, oob=True)
 
-    return (rows_oob, footer_oob)
+    window_start_oob = _render_window_start_oob(state, ids)
+
+    return (rows_oob, footer_oob, window_start_oob)
 
 # %% ../../nbs/routes/handlers.ipynb #321e1995
 def handle_navigate(

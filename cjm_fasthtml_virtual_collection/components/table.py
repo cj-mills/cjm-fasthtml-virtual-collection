@@ -77,7 +77,6 @@ def render_data_cell(item: Any,                    # Data item
     content = render_cell(item, ctx)
     cls = combine_classes(
         p.x(2), p.y(1),
-        truncate,
         column.cell_cls or None,
     )
     return Div(
