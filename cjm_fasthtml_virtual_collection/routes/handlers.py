@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate', 'handle_navigate_to_index',
-           'handle_update_viewport']
+           'handle_update_viewport', 'handle_focus_row']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
 from typing import Any, Callable, List, Tuple
@@ -41,6 +41,7 @@ def build_nav_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input)
     """Build OOB response for navigation: all visible slots + footer + window_start."""
     render_start, render_end = compute_window(
@@ -50,7 +51,8 @@ def build_nav_response(
     slot_oobs = [
         render_slot(
             slot_index=slot_idx, item=items[item_idx], item_index=item_idx,
-            config=config, state=state, ids=ids, render_cell=render_cell, oob=True,
+            config=config, state=state, ids=ids, render_cell=render_cell,
+            oob=True, focus_url=focus_url,
         )
         for slot_idx, item_idx in enumerate(range(render_start, render_end))
     ]
@@ -68,6 +70,7 @@ def build_cursor_move_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """Build OOB response for cursor-only move: swap just the affected slots."""
     oob_parts = []
@@ -77,14 +80,16 @@ def build_cursor_move_response(
         old_slot = old_cursor - state.window_start
         oob_parts.append(render_slot(
             slot_index=old_slot, item=items[old_cursor], item_index=old_cursor,
-            config=config, state=state, ids=ids, render_cell=render_cell, oob=True,
+            config=config, state=state, ids=ids, render_cell=render_cell,
+            oob=True, focus_url=focus_url,
         ))
 
     # Re-render new cursor slot (add highlight)
     new_slot = state.cursor_index - state.window_start
     oob_parts.append(render_slot(
         slot_index=new_slot, item=items[state.cursor_index], item_index=state.cursor_index,
-        config=config, state=state, ids=ids, render_cell=render_cell, oob=True,
+        config=config, state=state, ids=ids, render_cell=render_cell,
+        oob=True, focus_url=focus_url,
     ))
 
     oob_parts.append(render_footer(state, ids, oob=True))
@@ -93,6 +98,15 @@ def build_cursor_move_response(
     return tuple(oob_parts)
 
 # %% ../../nbs/routes/handlers.ipynb #321e1995
+def _is_cursor_visible(
+    state: VirtualCollectionState,  # Current state
+) -> bool:  # Whether cursor is within the visible window
+    """Check if the cursor index is within the current visible window."""
+    if state.cursor_index < 0:
+        return False
+    return state.window_start <= state.cursor_index < state.window_start + state.visible_rows
+
+
 def handle_navigate(
     direction: str,                         # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
     items: list,                            # Full item list
@@ -100,9 +114,15 @@ def handle_navigate(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     """Navigate in a direction. Mutates state in place."""
     if direction in ('up', 'down'):
+        # Reset cursor to top-most visible row if off-screen
+        if not _is_cursor_visible(state):
+            state.cursor_index = state.window_start
+            return build_nav_response(items, state, config, ids, render_cell, focus_url)
+
         old_cursor = state.cursor_index
         new_cursor, new_window_start, window_changed = navigate_cursor(
             state.cursor_index, direction, state.window_start,
@@ -112,14 +132,14 @@ def handle_navigate(
         state.window_start = new_window_start
 
         if window_changed:
-            return build_nav_response(items, state, config, ids, render_cell)
+            return build_nav_response(items, state, config, ids, render_cell, focus_url)
         else:
-            return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell)
+            return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
     else:
         state.window_start = navigate(
             state.window_start, direction, state.visible_rows, state.total_items
         )
-        return build_nav_response(items, state, config, ids, render_cell)
+        return build_nav_response(items, state, config, ids, render_cell, focus_url)
 
 # %% ../../nbs/routes/handlers.ipynb #bb86598d
 def handle_navigate_to_index(
@@ -129,12 +149,13 @@ def handle_navigate_to_index(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer)
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements
     """Navigate to a specific index. Mutates state.window_start in place."""
     state.window_start = clamp_window_start(
         target_index, state.visible_rows, state.total_items
     )
-    return build_nav_response(items, state, config, ids, render_cell)
+    return build_nav_response(items, state, config, ids, render_cell, focus_url)
 
 # %% ../../nbs/routes/handlers.ipynb #72c4a7a1
 def _build_container_response(
@@ -143,9 +164,10 @@ def _build_container_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (container + footer + window_start input)
     """Build OOB response that replaces the entire rows container with new slots."""
-    rows_oob = render_table_rows(items, config, state, ids, render_cell)
+    rows_oob = render_table_rows(items, config, state, ids, render_cell, focus_url=focus_url)
     rows_oob.attrs["hx-swap-oob"] = "outerHTML"
     return (
         rows_oob,
@@ -162,6 +184,7 @@ def handle_update_viewport(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     is_auto: bool = True,                   # Whether from auto-fit
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     """Update viewport with new row count. Mutates state in place."""
     visible_rows = max(1, visible_rows)
@@ -171,4 +194,19 @@ def handle_update_viewport(
         state.window_start, state.visible_rows, state.total_items
     )
     # Replace entire container — slot count changed
-    return _build_container_response(items, state, config, ids, render_cell)
+    return _build_container_response(items, state, config, ids, render_cell, focus_url)
+
+# %% ../../nbs/routes/handlers.ipynb #yz8pye66p
+def handle_focus_row(
+    row_index: int,                         # Row index to focus
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
+    """Move cursor to a specific row via click/tap. Mutates state in place."""
+    old_cursor = state.cursor_index
+    state.cursor_index = max(0, min(row_index, state.total_items - 1))
+    return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)

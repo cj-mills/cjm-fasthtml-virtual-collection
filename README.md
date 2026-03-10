@@ -53,34 +53,34 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> core_html_ids
-    components_collection --> core_models
-    components_collection --> components_scrollbar
     components_collection --> components_table
     components_collection --> components_footer
+    components_collection --> core_models
+    components_collection --> core_html_ids
+    components_collection --> components_scrollbar
+    components_footer --> core_html_ids
     components_footer --> core_models
     components_footer --> core_windowing
-    components_footer --> core_html_ids
+    components_scrollbar --> core_html_ids
     components_scrollbar --> core_models
     components_scrollbar --> core_windowing
-    components_scrollbar --> core_html_ids
-    components_table --> core_html_ids
     components_table --> core_models
-    js_auto_fit --> core_models
+    components_table --> core_html_ids
     js_auto_fit --> core_html_ids
-    js_scroll --> core_button_ids
+    js_auto_fit --> core_models
     js_scroll --> core_html_ids
+    js_scroll --> core_button_ids
+    js_scrollbar --> core_html_ids
     js_scrollbar --> core_models
     js_scrollbar --> core_button_ids
-    js_scrollbar --> core_html_ids
+    keyboard_actions --> core_html_ids
     keyboard_actions --> core_models
     keyboard_actions --> core_button_ids
-    keyboard_actions --> core_html_ids
+    routes_handlers --> components_footer
+    routes_handlers --> core_models
+    routes_handlers --> core_html_ids
     routes_handlers --> core_windowing
     routes_handlers --> components_table
-    routes_handlers --> core_html_ids
-    routes_handlers --> core_models
-    routes_handlers --> components_footer
     routes_router --> core_models
     routes_router --> routes_handlers
     routes_router --> core_html_ids
@@ -301,7 +301,8 @@ from cjm_fasthtml_virtual_collection.routes.handlers import (
     build_cursor_move_response,
     handle_navigate,
     handle_navigate_to_index,
-    handle_update_viewport
+    handle_update_viewport,
+    handle_focus_row
 )
 ```
 
@@ -322,6 +323,7 @@ def build_nav_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input)
     "Build OOB response for navigation: all visible slots + footer + window_start."
 ```
@@ -334,8 +336,16 @@ def build_cursor_move_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     "Build OOB response for cursor-only move: swap just the affected slots."
+```
+
+``` python
+def _is_cursor_visible(
+    state: VirtualCollectionState,  # Current state
+) -> bool:  # Whether cursor is within the visible window
+    "Check if the cursor index is within the current visible window."
 ```
 
 ``` python
@@ -346,6 +356,7 @@ def handle_navigate(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     "Navigate in a direction. Mutates state in place."
 ```
@@ -358,7 +369,8 @@ def handle_navigate_to_index(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer)
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements
     "Navigate to a specific index. Mutates state.window_start in place."
 ```
 
@@ -369,6 +381,7 @@ def _build_container_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (container + footer + window_start input)
     "Build OOB response that replaces the entire rows container with new slots."
 ```
@@ -382,8 +395,22 @@ def handle_update_viewport(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     is_auto: bool = True,                   # Whether from auto-fit
+    focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     "Update viewport with new row count. Mutates state in place."
+```
+
+``` python
+def handle_focus_row(
+    row_index: int,                         # Row index to focus
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
+    "Move cursor to a specific row via click/tap. Mutates state in place."
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -590,6 +617,7 @@ class VirtualCollectionUrls:
     nav_last: str = ''  # Navigate to last row
     nav_to_index: str = ''  # Navigate to specific row index
     update_viewport: str = ''  # Update visible_rows (auto-fit)
+    focus_row: str = ''  # Move cursor to a specific row (click/tap)
     sort: str = ''  # Sort by column (header click)
 ```
 
@@ -780,6 +808,7 @@ def render_data_row(item: Any,                       # Data item
                     state: VirtualCollectionState,     # Collection state
                     ids: VirtualCollectionHtmlIds,     # HTML IDs
                     render_cell: Callable,             # Consumer cell render callback
+                    focus_url: str = "",               # URL for click-to-focus (empty = disabled)
                    ) -> Div:  # Row element with stable ID
     "Render a single data row with all cells."
 ```
@@ -794,6 +823,7 @@ def render_slot(
     ids: VirtualCollectionHtmlIds,         # HTML IDs
     render_cell: Callable,                 # Consumer cell render callback
     oob: bool = False,                     # Whether to render as OOB swap
+    focus_url: str = "",                   # URL for click-to-focus (empty = disabled)
 ) -> Div:  # Slot wrapper containing the data row
     "Render a viewport slot wrapping a data row."
 ```
@@ -804,6 +834,7 @@ def render_table_rows(items: list,                       # Full item list
                       state: VirtualCollectionState,      # Collection state
                       ids: VirtualCollectionHtmlIds,      # HTML IDs
                       render_cell: Callable,              # Consumer cell render callback
+                      focus_url: str = "",                # URL for click-to-focus (empty = disabled)
                      ) -> Div:  # Rows container with slot wrappers
     "Render all visible rows in the current window, wrapped in position-based slots."
 ```

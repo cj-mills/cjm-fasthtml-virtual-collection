@@ -196,16 +196,29 @@ def main():
     # -------------------------------------------------------------------------
 
     from cjm_fasthtml_virtual_collection.components.table import render_cell_oob
+    from cjm_fasthtml_virtual_collection.routes.handlers import build_cursor_move_response
 
     @router
     def select(row_index: int):
-        """Toggle selection on a row — returns only the affected checkbox cell via OOB."""
+        """Toggle selection and move cursor — checkbox OOB + focus jump in one response."""
         items[row_index].selected = not items[row_index].selected
         select_col = config.columns[0]  # "select" column
-        return render_cell_oob(
+
+        # Checkbox cell OOB
+        cell_oob = render_cell_oob(
             items[row_index], select_col, row_index,
             state.total_items, ids, render_cell,
         )
+
+        # Move cursor to clicked row
+        old_cursor = state.cursor_index
+        state.cursor_index = row_index
+        cursor_oobs = build_cursor_move_response(
+            old_cursor, items, state, config, ids, render_cell,
+            focus_url=urls.focus_row,
+        )
+
+        return (cell_oob,) + cursor_oobs
 
     print(f"  Select route: /select")
 

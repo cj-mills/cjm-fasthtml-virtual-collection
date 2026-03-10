@@ -16,6 +16,7 @@ from cjm_fasthtml_tailwind.utilities.typography import font_weight, truncate, fo
 from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import grid_display, items
 from cjm_fasthtml_tailwind.utilities.borders import border
 from cjm_fasthtml_tailwind.utilities.sizing import h, min_h
+from cjm_fasthtml_tailwind.utilities.interactivity import cursor as cursor_tw
 from cjm_fasthtml_tailwind.core.base import combine_classes
 
 from cjm_fasthtml_daisyui.utilities.semantic_colors import border_dui, bg_dui, text_dui
@@ -92,6 +93,7 @@ def render_data_row(item: Any,                       # Data item
                     state: VirtualCollectionState,     # Collection state
                     ids: VirtualCollectionHtmlIds,     # HTML IDs
                     render_cell: Callable,             # Consumer cell render callback
+                    focus_url: str = "",               # URL for click-to-focus (empty = disabled)
                    ) -> Div:  # Row element with stable ID
     """Render a single data row with all cells."""
     gtc = grid_template_columns(config.columns)
@@ -108,14 +110,25 @@ def render_data_row(item: Any,                       # Data item
         grid_display, items.center,
         border.b(), border_dui.base_200,
         bg_dui.base_200.hover,
+        cursor_tw.pointer if focus_url else None,
         bg_dui.base_300 if is_cursor else None,
     )
+
+    # Click-to-focus HTMX attributes (skip clicks on interactive children)
+    focus_attrs = {}
+    if focus_url:
+        focus_attrs = dict(
+            hx_post=f"{focus_url}?row_index={row_index}",
+            hx_swap="none",
+            hx_trigger="click[!event.target.closest('input,button,a')]",
+        )
 
     return Div(
         *cells,
         id=ids.row_id(row_index),
         cls=row_cls,
         style=f"grid-template-columns: {gtc}; height: {config.row_height}px",
+        **focus_attrs,
     )
 
 # %% ../../nbs/components/table.ipynb #v5btl2d4va
@@ -128,9 +141,12 @@ def render_slot(
     ids: VirtualCollectionHtmlIds,         # HTML IDs
     render_cell: Callable,                 # Consumer cell render callback
     oob: bool = False,                     # Whether to render as OOB swap
+    focus_url: str = "",                   # URL for click-to-focus (empty = disabled)
 ) -> Div:  # Slot wrapper containing the data row
     """Render a viewport slot wrapping a data row."""
-    inner_row = render_data_row(item, item_index, config, state, ids, render_cell)
+    inner_row = render_data_row(
+        item, item_index, config, state, ids, render_cell, focus_url=focus_url,
+    )
     return Div(
         inner_row,
         id=ids.slot_id(slot_index),
@@ -143,6 +159,7 @@ def render_table_rows(items: list,                       # Full item list
                       state: VirtualCollectionState,      # Collection state
                       ids: VirtualCollectionHtmlIds,      # HTML IDs
                       render_cell: Callable,              # Consumer cell render callback
+                      focus_url: str = "",                # URL for click-to-focus (empty = disabled)
                      ) -> Div:  # Rows container with slot wrappers
     """Render all visible rows in the current window, wrapped in position-based slots."""
     from cjm_fasthtml_virtual_collection.core.windowing import compute_window
@@ -155,6 +172,7 @@ def render_table_rows(items: list,                       # Full item list
         render_slot(
             slot_index=slot_idx, item=items[item_idx], item_index=item_idx,
             config=config, state=state, ids=ids, render_cell=render_cell,
+            focus_url=focus_url,
         )
         for slot_idx, item_idx in enumerate(range(render_start, render_end))
     ]

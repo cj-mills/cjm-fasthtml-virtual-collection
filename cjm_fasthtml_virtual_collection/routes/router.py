@@ -16,6 +16,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_navigate, handle_navigate_to_index, handle_update_viewport,
+    handle_focus_row,
 )
 
 # %% ../../nbs/routes/router.ipynb #a93f7b39
@@ -31,6 +32,12 @@ def init_virtual_collection_router(
     router = APIRouter(prefix=route_prefix)
     ids = VirtualCollectionHtmlIds(prefix=config.prefix)
 
+    # focus_row URL is resolved after route registration (forward reference)
+    _focus_url = ""
+
+    def _get_focus_url() -> str:
+        return _focus_url
+
     # -----------------------------------------------------------------
     # Navigation routes
     # -----------------------------------------------------------------
@@ -42,6 +49,7 @@ def init_virtual_collection_router(
         result = handle_navigate(
             direction=direction, items=items, state=state,
             config=config, ids=ids, render_cell=render_cell,
+            focus_url=_get_focus_url(),
         )
         state_setter(state)
         return result
@@ -72,6 +80,7 @@ def init_virtual_collection_router(
         result = handle_navigate_to_index(
             target_index=target_index, items=items, state=state,
             config=config, ids=ids, render_cell=render_cell,
+            focus_url=_get_focus_url(),
         )
         state_setter(state)
         return result
@@ -89,6 +98,24 @@ def init_virtual_collection_router(
             visible_rows=visible_rows, items=items, state=state,
             config=config, ids=ids, render_cell=render_cell,
             is_auto=(is_auto == "true"),
+            focus_url=_get_focus_url(),
+        )
+        state_setter(state)
+        return result
+
+    # -----------------------------------------------------------------
+    # Focus route
+    # -----------------------------------------------------------------
+
+    @router
+    def focus_row(row_index: int) -> Any:
+        """Move cursor to a specific row via click/tap."""
+        state = state_getter()
+        items = get_items()
+        result = handle_focus_row(
+            row_index=row_index, items=items, state=state,
+            config=config, ids=ids, render_cell=render_cell,
+            focus_url=_get_focus_url(),
         )
         state_setter(state)
         return result
@@ -96,6 +123,8 @@ def init_virtual_collection_router(
     # -----------------------------------------------------------------
     # Build URL bundle from registered routes
     # -----------------------------------------------------------------
+
+    _focus_url = focus_row.to()
 
     urls = VirtualCollectionUrls(
         nav_up=nav_up.to(),
@@ -106,6 +135,7 @@ def init_virtual_collection_router(
         nav_last=nav_last.to(),
         nav_to_index=nav_to_index.to(),
         update_viewport=update_viewport.to(),
+        focus_row=_focus_url,
     )
 
     return router, urls

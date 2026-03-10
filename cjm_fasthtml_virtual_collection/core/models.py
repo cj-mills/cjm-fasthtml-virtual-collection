@@ -108,5 +108,8 @@ class VirtualCollectionUrls:
     # Viewport
     update_viewport: str = ""           # Update visible_rows (auto-fit)
 
+    # Focus
+    focus_row: str = ""                 # Move cursor to a specific row (click/tap)
+
     # Sort
     sort: str = ""                      # Sort by column (header click)

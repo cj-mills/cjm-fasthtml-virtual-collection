@@ -42,7 +42,7 @@ def render_virtual_collection(
         children.append(render_header_row(config, ids))
 
         # Viewport body (rows) + scrollbar side-by-side
-        rows = render_table_rows(items, config, state, ids, render_cell)
+        rows = render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row)
         viewport = Div(
             rows,
             id=ids.viewport,
