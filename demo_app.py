@@ -97,9 +97,13 @@ def main():
     print("=" * 70)
 
     # Create FastHTML app
+    from fasthtml.common import Link
     app, rt = fast_app(
         pico=False,
-        hdrs=[*get_daisyui_headers(), create_theme_persistence_script()],
+        hdrs=[
+            *get_daisyui_headers(),
+            create_theme_persistence_script(),
+        ],
         title="Virtual Collection Demo",
         htmlkw={'data-theme': 'light'},
         secret_key="demo-secret-key"

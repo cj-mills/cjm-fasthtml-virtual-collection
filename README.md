@@ -54,32 +54,32 @@ graph LR
     routes_router[routes.router<br/>routes.router]
 
     components_collection --> core_html_ids
-    components_collection --> components_scrollbar
     components_collection --> core_models
-    components_collection --> components_footer
+    components_collection --> components_scrollbar
     components_collection --> components_table
+    components_collection --> components_footer
+    components_footer --> core_models
     components_footer --> core_windowing
     components_footer --> core_html_ids
-    components_footer --> core_models
-    components_scrollbar --> core_html_ids
     components_scrollbar --> core_models
     components_scrollbar --> core_windowing
+    components_scrollbar --> core_html_ids
     components_table --> core_html_ids
     components_table --> core_models
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_html_ids
     js_scroll --> core_button_ids
+    js_scroll --> core_html_ids
     js_scrollbar --> core_models
-    js_scrollbar --> core_html_ids
     js_scrollbar --> core_button_ids
+    js_scrollbar --> core_html_ids
     keyboard_actions --> core_models
-    keyboard_actions --> core_html_ids
     keyboard_actions --> core_button_ids
-    routes_handlers --> core_html_ids
-    routes_handlers --> core_models
+    keyboard_actions --> core_html_ids
     routes_handlers --> core_windowing
     routes_handlers --> components_table
+    routes_handlers --> core_html_ids
+    routes_handlers --> core_models
     routes_handlers --> components_footer
     routes_router --> core_models
     routes_router --> routes_handlers

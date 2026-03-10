@@ -107,7 +107,8 @@ def render_data_row(item: Any,                       # Data item
     row_cls = combine_classes(
         grid_display, items.center,
         border.b(), border_dui.base_200,
-        bg_dui.primary.opacity(10) if is_cursor else None,
+        bg_dui.base_200.hover,
+        bg_dui.base_300 if is_cursor else None,
     )
 
     return Div(
