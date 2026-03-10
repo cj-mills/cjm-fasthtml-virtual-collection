@@ -86,6 +86,7 @@ def main():
         build_collection_url_map, apply_nav_sync,
     )
     from cjm_fasthtml_virtual_collection.js.scroll import generate_scroll_nav_js
+    from cjm_fasthtml_virtual_collection.js.touch import generate_touch_nav_js
     from cjm_fasthtml_virtual_collection.js.scrollbar import generate_scrollbar_js
     from cjm_fasthtml_virtual_collection.js.auto_fit import generate_auto_fit_js, auto_fit_callback_name
 
@@ -256,6 +257,7 @@ def main():
 
     # Scroll wheel JS + scrollbar JS + auto-fit JS
     scroll_js = generate_scroll_nav_js(ids, btn_ids)
+    touch_js = generate_touch_nav_js(ids, btn_ids, urls, row_height=config.row_height)
     scrollbar_js = generate_scrollbar_js(ids, urls)
     auto_fit_js = generate_auto_fit_js(ids, config, urls)
 
@@ -338,6 +340,7 @@ def main():
 
                 # Scroll wheel + scrollbar + auto-fit + viewport-fit JS
                 Script(scroll_js),
+                Script(touch_js),
                 Script(scrollbar_js),
                 Script(auto_fit_js),
                 render_viewport_fit_script(vf_config),

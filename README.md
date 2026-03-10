@@ -22,17 +22,18 @@ pip install cjm_fasthtml_virtual_collection
     │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
     │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
     │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
-    ├── js/ (3)
+    ├── js/ (4)
     │   ├── auto_fit.ipynb   # JavaScript generator for automatic visible row count adjustment based on viewport height.
     │   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
-    │   └── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
+    │   ├── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
+    │   └── touch.ipynb      # JavaScript generator for touch/swipe to navigation conversion.
     ├── keyboard/ (1)
     │   └── actions.ipynb  # Keyboard navigation focus zone and action factories for the virtual collection.
     └── routes/ (2)
         ├── handlers.ipynb  # Response builder functions for virtual collection navigation (Tier 1 API).
         └── router.ipynb    # Convenience router factory that wires up standard virtual collection routes (Tier 2 API).
 
-Total: 14 notebooks across 5 directories
+Total: 15 notebooks across 5 directories
 
 ## Module Dependencies
 
@@ -49,44 +50,48 @@ graph LR
     js_auto_fit[js.auto_fit<br/>js.auto_fit]
     js_scroll[js.scroll<br/>js.scroll]
     js_scrollbar[js.scrollbar<br/>js.scrollbar]
+    js_touch[js.touch<br/>js.touch]
     keyboard_actions[keyboard.actions<br/>keyboard.actions]
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
+    components_collection --> components_scrollbar
+    components_collection --> core_models
     components_collection --> components_table
     components_collection --> components_footer
-    components_collection --> core_models
     components_collection --> core_html_ids
-    components_collection --> components_scrollbar
-    components_footer --> core_html_ids
     components_footer --> core_models
     components_footer --> core_windowing
-    components_scrollbar --> core_html_ids
+    components_footer --> core_html_ids
     components_scrollbar --> core_models
+    components_scrollbar --> core_html_ids
     components_scrollbar --> core_windowing
     components_table --> core_models
     components_table --> core_html_ids
-    js_auto_fit --> core_html_ids
     js_auto_fit --> core_models
+    js_auto_fit --> core_html_ids
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
     js_scrollbar --> core_models
     js_scrollbar --> core_button_ids
-    keyboard_actions --> core_html_ids
+    js_touch --> core_html_ids
+    js_touch --> core_models
+    js_touch --> core_button_ids
     keyboard_actions --> core_models
+    keyboard_actions --> core_html_ids
     keyboard_actions --> core_button_ids
-    routes_handlers --> components_footer
-    routes_handlers --> core_models
-    routes_handlers --> core_html_ids
     routes_handlers --> core_windowing
+    routes_handlers --> core_models
     routes_handlers --> components_table
-    routes_router --> core_models
+    routes_handlers --> components_footer
+    routes_handlers --> core_html_ids
     routes_router --> routes_handlers
+    routes_router --> core_models
     routes_router --> core_html_ids
 ```
 
-*31 cross-module dependencies detected*
+*34 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -136,7 +141,7 @@ def build_collection_url_map(
     button_ids: VirtualCollectionButtonIds,  # Button IDs for this collection
     urls: VirtualCollectionUrls,  # URL bundle for routing
 ) -> Dict[str, str]:  # Mapping of button ID -> route URL
-    "Build url_map for render_keyboard_system with all collection navigation buttons."
+    "Build url_map for render_keyboard_system with all collection buttons."
 ```
 
 ``` python
@@ -237,6 +242,12 @@ class VirtualCollectionButtonIds:
         def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
     
     def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
+    
+        # -- Action buttons --
+        @property
+        def activate(self) -> str: return f"{self.prefix}-btn-activate"
+    
+    def activate(self) -> str: return f"{self.prefix}-btn-activate"
 ```
 
 ### components.collection (`collection.ipynb`)
@@ -302,7 +313,8 @@ from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_navigate,
     handle_navigate_to_index,
     handle_update_viewport,
-    handle_focus_row
+    handle_focus_row,
+    handle_activate
 )
 ```
 
@@ -411,6 +423,19 @@ def handle_focus_row(
     focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     "Move cursor to a specific row via click/tap. Mutates state in place."
+```
+
+``` python
+def handle_activate(
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    on_activate: Callable,                  # Consumer callback: (item, row_index, state) -> Tuple of OOB elements
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements from consumer callback
+    "Activate the focused row via Space/Enter. Delegates to consumer callback."
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -618,6 +643,7 @@ class VirtualCollectionUrls:
     nav_to_index: str = ''  # Navigate to specific row index
     update_viewport: str = ''  # Update visible_rows (auto-fit)
     focus_row: str = ''  # Move cursor to a specific row (click/tap)
+    activate: str = ''  # Activate focused row (Space/Enter)
     sort: str = ''  # Sort by column (header click)
 ```
 
@@ -649,6 +675,7 @@ def init_virtual_collection_router(
     state_setter: Callable[[VirtualCollectionState], None],  # Function to save state
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
+    on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     "Initialize an APIRouter with all standard virtual collection routes."
@@ -860,6 +887,44 @@ def render_row_oob(item: Any,                       # Data item
                    render_cell: Callable,            # Consumer cell render callback
                   ) -> Div:  # Row element with hx-swap-oob
     "Render a full row with OOB swap for targeted update."
+```
+
+### js.touch (`touch.ipynb`)
+
+> JavaScript generator for touch/swipe to navigation conversion.
+
+#### Import
+
+``` python
+from cjm_fasthtml_virtual_collection.js.touch import (
+    TOUCH_SWIPE_THRESHOLD,
+    TOUCH_MOMENTUM_MIN_VELOCITY,
+    TOUCH_MOMENTUM_FRICTION,
+    TOUCH_VELOCITY_SAMPLES,
+    generate_touch_nav_js
+)
+```
+
+#### Functions
+
+``` python
+def generate_touch_nav_js(
+    ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
+    button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers (unused, kept for API consistency)
+    urls: VirtualCollectionUrls,         # URL bundle for direct HTMX ajax calls
+    row_height: int = 40,                # Row height in px (step distance for drag)
+    disable_in_modes: Tuple[str, ...] = (),  # Mode names where touch is suppressed
+) -> str:  # JavaScript code fragment
+    "Generate JS for touch gesture to navigation conversion."
+```
+
+#### Variables
+
+``` python
+TOUCH_SWIPE_THRESHOLD: int = 30
+TOUCH_MOMENTUM_MIN_VELOCITY: float = 0.5
+TOUCH_MOMENTUM_FRICTION: float = 0.95
+TOUCH_VELOCITY_SAMPLES: int = 5
 ```
 
 ### core.windowing (`windowing.ipynb`)

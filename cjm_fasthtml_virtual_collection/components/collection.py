@@ -12,6 +12,7 @@ from fasthtml.common import Div, Hidden
 
 from cjm_fasthtml_tailwind.utilities.layout import overflow
 from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import flex_display, flex_direction, flex
+from cjm_fasthtml_tailwind.utilities.interactivity import touch
 from cjm_fasthtml_tailwind.core.base import combine_classes
 
 from cjm_fasthtml_virtual_collection.core.models import (
@@ -75,5 +76,5 @@ def render_virtual_collection(
     return Div(
         *children,
         id=ids.collection,
-        cls=combine_classes(flex_display, flex_direction.col),
+        cls=combine_classes(flex_display, flex_direction.col, touch.none),
     )

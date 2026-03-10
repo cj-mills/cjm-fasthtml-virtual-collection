@@ -67,7 +67,7 @@ def render_scrollbar(
         thumb,
         id=ids.scrollbar_track,
         cls=combine_classes(
-            w(2), position.relative, border_radius.field,
+            w(3), position.relative, border_radius.field,
             bg_dui.base_content.opacity(10),
             cursor.pointer, select.none,
         ),
