@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['grid_template_columns', 'render_header_cell', 'render_header_row', 'render_data_cell', 'render_data_row',
-           'render_table_rows', 'render_cell_oob', 'render_row_oob']
+           'render_slot', 'render_table_rows', 'render_cell_oob', 'render_row_oob']
 
 # %% ../../nbs/components/table.ipynb #78dad85f
 from typing import Any, Callable, List, Optional, Tuple
@@ -117,26 +117,48 @@ def render_data_row(item: Any,                       # Data item
         style=f"grid-template-columns: {gtc}; height: {config.row_height}px",
     )
 
+# %% ../../nbs/components/table.ipynb #v5btl2d4va
+def render_slot(
+    slot_index: int,                       # Position in viewport (0-based)
+    item: Any,                             # Data item
+    item_index: int,                       # Row index in full collection
+    config: VirtualCollectionConfig,       # Collection config
+    state: VirtualCollectionState,         # Collection state
+    ids: VirtualCollectionHtmlIds,         # HTML IDs
+    render_cell: Callable,                 # Consumer cell render callback
+    oob: bool = False,                     # Whether to render as OOB swap
+) -> Div:  # Slot wrapper containing the data row
+    """Render a viewport slot wrapping a data row."""
+    inner_row = render_data_row(item, item_index, config, state, ids, render_cell)
+    return Div(
+        inner_row,
+        id=ids.slot_id(slot_index),
+        hx_swap_oob="innerHTML" if oob else None,
+    )
+
 # %% ../../nbs/components/table.ipynb #510630aa
 def render_table_rows(items: list,                       # Full item list
                       config: VirtualCollectionConfig,    # Collection config
                       state: VirtualCollectionState,      # Collection state
                       ids: VirtualCollectionHtmlIds,      # HTML IDs
                       render_cell: Callable,              # Consumer cell render callback
-                     ) -> Div:  # Rows container (OOB swap target)
-    """Render all visible rows in the current window."""
+                     ) -> Div:  # Rows container with slot wrappers
+    """Render all visible rows in the current window, wrapped in position-based slots."""
     from cjm_fasthtml_virtual_collection.core.windowing import compute_window
 
     render_start, render_end = compute_window(
         state.window_start, state.visible_rows, state.total_items
     )
 
-    rows = [
-        render_data_row(items[i], i, config, state, ids, render_cell)
-        for i in range(render_start, render_end)
+    slots = [
+        render_slot(
+            slot_index=slot_idx, item=items[item_idx], item_index=item_idx,
+            config=config, state=state, ids=ids, render_cell=render_cell,
+        )
+        for slot_idx, item_idx in enumerate(range(render_start, render_end))
     ]
 
-    return Div(*rows, id=ids.rows)
+    return Div(*slots, id=ids.rows)
 
 # %% ../../nbs/components/table.ipynb #gsvxddb56a8
 def render_cell_oob(item: Any,                       # Data item

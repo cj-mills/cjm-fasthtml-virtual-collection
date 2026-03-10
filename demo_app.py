@@ -83,7 +83,7 @@ def main():
     from cjm_fasthtml_virtual_collection.routes.router import init_virtual_collection_router
     from cjm_fasthtml_virtual_collection.keyboard.actions import (
         create_collection_focus_zone, create_collection_nav_actions,
-        build_collection_url_map,
+        build_collection_url_map, apply_nav_sync,
     )
     from cjm_fasthtml_virtual_collection.js.scroll import generate_scroll_nav_js
     from cjm_fasthtml_virtual_collection.js.scrollbar import generate_scrollbar_js
@@ -131,6 +131,7 @@ def main():
     state = VirtualCollectionState(
         total_items=len(items),
         visible_rows=15,
+        cursor_index=0,
     )
 
     ids = VirtualCollectionHtmlIds(prefix=config.prefix)
@@ -222,6 +223,8 @@ def main():
         target_map=target_map,
         swap_map=swap_map,
     )
+
+    apply_nav_sync(kb_system, ids)
 
     # Scroll wheel JS + scrollbar JS + auto-fit JS
     scroll_js = generate_scroll_nav_js(ids, btn_ids)

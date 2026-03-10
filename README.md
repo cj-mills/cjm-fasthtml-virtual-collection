@@ -53,36 +53,36 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
+    components_collection --> core_html_ids
+    components_collection --> components_scrollbar
     components_collection --> core_models
     components_collection --> components_footer
-    components_collection --> core_html_ids
     components_collection --> components_table
-    components_collection --> components_scrollbar
-    components_footer --> core_models
     components_footer --> core_windowing
     components_footer --> core_html_ids
+    components_footer --> core_models
+    components_scrollbar --> core_html_ids
     components_scrollbar --> core_models
     components_scrollbar --> core_windowing
-    components_scrollbar --> core_html_ids
-    components_table --> core_models
     components_table --> core_html_ids
+    components_table --> core_models
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_button_ids
     js_scroll --> core_html_ids
+    js_scroll --> core_button_ids
     js_scrollbar --> core_models
-    js_scrollbar --> core_button_ids
     js_scrollbar --> core_html_ids
+    js_scrollbar --> core_button_ids
     keyboard_actions --> core_models
-    keyboard_actions --> core_button_ids
     keyboard_actions --> core_html_ids
-    routes_handlers --> core_windowing
-    routes_handlers --> core_models
-    routes_handlers --> components_footer
+    keyboard_actions --> core_button_ids
     routes_handlers --> core_html_ids
+    routes_handlers --> core_models
+    routes_handlers --> core_windowing
     routes_handlers --> components_table
-    routes_router --> routes_handlers
+    routes_handlers --> components_footer
     routes_router --> core_models
+    routes_router --> routes_handlers
     routes_router --> core_html_ids
 ```
 
@@ -107,7 +107,8 @@ Detailed documentation for each module in the project:
 from cjm_fasthtml_virtual_collection.keyboard.actions import (
     create_collection_focus_zone,
     create_collection_nav_actions,
-    build_collection_url_map
+    build_collection_url_map,
+    apply_nav_sync
 )
 ```
 
@@ -136,6 +137,19 @@ def build_collection_url_map(
     urls: VirtualCollectionUrls,  # URL bundle for routing
 ) -> Dict[str, str]:  # Mapping of button ID -> route URL
     "Build url_map for render_keyboard_system with all collection navigation buttons."
+```
+
+``` python
+def apply_nav_sync(
+    kb_system: KeyboardSystem,         # Rendered keyboard system to patch
+    ids: VirtualCollectionHtmlIds,     # HTML IDs for this collection
+) -> None:  # Modifies kb_system.action_buttons in place
+    """
+    Add hx-sync to nav buttons so rapid input aborts stale in-flight requests.
+    
+    Prevents race conditions between cursor-only and full-window OOB responses
+    during rapid keyboard or scroll wheel navigation.
+    """
 ```
 
 ### js.auto_fit (`auto_fit.ipynb`)
@@ -284,6 +298,7 @@ def render_footer(state: VirtualCollectionState,     # Collection state
 ``` python
 from cjm_fasthtml_virtual_collection.routes.handlers import (
     build_nav_response,
+    build_cursor_move_response,
     handle_navigate,
     handle_navigate_to_index,
     handle_update_viewport
@@ -307,8 +322,20 @@ def build_nav_response(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer + window_start input)
-    "Build OOB response for navigation: rows + footer + window_start hidden input."
+) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input)
+    "Build OOB response for navigation: all visible slots + footer + window_start."
+```
+
+``` python
+def build_cursor_move_response(
+    old_cursor: int,                        # Previous cursor index
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (cursor already updated)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
+    "Build OOB response for cursor-only move: swap just the affected slots."
 ```
 
 ``` python
@@ -319,8 +346,8 @@ def handle_navigate(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-) -> Tuple:  # OOB elements (rows + footer)
-    "Navigate in a direction. Mutates state.window_start in place."
+) -> Tuple:  # OOB elements
+    "Navigate in a direction. Mutates state in place."
 ```
 
 ``` python
@@ -336,6 +363,17 @@ def handle_navigate_to_index(
 ```
 
 ``` python
+def _build_container_response(
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+) -> Tuple:  # OOB elements (container + footer + window_start input)
+    "Build OOB response that replaces the entire rows container with new slots."
+```
+
+``` python
 def handle_update_viewport(
     visible_rows: int,                      # New visible row count
     items: list,                            # Full item list
@@ -344,7 +382,7 @@ def handle_update_viewport(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     is_auto: bool = True,                   # Whether from auto-fit
-) -> Tuple:  # OOB elements (rows + footer)
+) -> Tuple:  # OOB elements
     "Update viewport with new row count. Mutates state in place."
 ```
 
@@ -383,13 +421,19 @@ class VirtualCollectionHtmlIds:
     
     def viewport(self) -> str: return f"{self.prefix}-viewport"
     
-        # -- Rows container (OOB swap target for navigation) --
+        # -- Rows container --
         @property
         def rows(self) -> str: return f"{self.prefix}-rows"
     
     def rows(self) -> str: return f"{self.prefix}-rows"
     
-        # -- Dynamic row/cell/item IDs --
+        # -- Slot IDs (position-based, stable across navigation) --
+        def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
+    
+    def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
+            return f"{self.prefix}-slot-{slot_index}"
+    
+        # -- Dynamic row/cell/item IDs (data-based, on inner content) --
         def row_id(self, index: int) -> str:  # ID for a table row
     
     def row_id(self, index: int) -> str:  # ID for a table row
@@ -689,6 +733,7 @@ from cjm_fasthtml_virtual_collection.components.table import (
     render_header_row,
     render_data_cell,
     render_data_row,
+    render_slot,
     render_table_rows,
     render_cell_oob,
     render_row_oob
@@ -740,13 +785,27 @@ def render_data_row(item: Any,                       # Data item
 ```
 
 ``` python
+def render_slot(
+    slot_index: int,                       # Position in viewport (0-based)
+    item: Any,                             # Data item
+    item_index: int,                       # Row index in full collection
+    config: VirtualCollectionConfig,       # Collection config
+    state: VirtualCollectionState,         # Collection state
+    ids: VirtualCollectionHtmlIds,         # HTML IDs
+    render_cell: Callable,                 # Consumer cell render callback
+    oob: bool = False,                     # Whether to render as OOB swap
+) -> Div:  # Slot wrapper containing the data row
+    "Render a viewport slot wrapping a data row."
+```
+
+``` python
 def render_table_rows(items: list,                       # Full item list
                       config: VirtualCollectionConfig,    # Collection config
                       state: VirtualCollectionState,      # Collection state
                       ids: VirtualCollectionHtmlIds,      # HTML IDs
                       render_cell: Callable,              # Consumer cell render callback
-                     ) -> Div:  # Rows container (OOB swap target)
-    "Render all visible rows in the current window."
+                     ) -> Div:  # Rows container with slot wrappers
+    "Render all visible rows in the current window, wrapped in position-based slots."
 ```
 
 ``` python
@@ -784,6 +843,7 @@ from cjm_fasthtml_virtual_collection.core.windowing import (
     compute_window,
     compute_scrollbar,
     navigate,
+    navigate_cursor,
     compute_visible_rows
 )
 ```
@@ -823,6 +883,17 @@ def navigate(window_start: int,   # Current first visible row
              total_items: int,     # Total item count
             ) -> int:              # New window_start (clamped)
     "Compute new window_start for a navigation action."
+```
+
+``` python
+def navigate_cursor(
+    cursor_index: int,    # Current cursor position (-1 treated as window_start)
+    direction: str,       # 'up' or 'down'
+    window_start: int,    # Current first visible row
+    visible_rows: int,    # Number of visible rows
+    total_items: int,     # Total item count
+) -> Tuple[int, int, bool]:  # (new_cursor, new_window_start, window_changed)
+    "Move cursor up/down within the visible window, scrolling at edges."
 ```
 
 ``` python

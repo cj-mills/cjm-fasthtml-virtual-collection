@@ -26,11 +26,15 @@ class VirtualCollectionHtmlIds:
     @property
     def viewport(self) -> str: return f"{self.prefix}-viewport"
 
-    # -- Rows container (OOB swap target for navigation) --
+    # -- Rows container --
     @property
     def rows(self) -> str: return f"{self.prefix}-rows"
 
-    # -- Dynamic row/cell/item IDs --
+    # -- Slot IDs (position-based, stable across navigation) --
+    def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
+        return f"{self.prefix}-slot-{slot_index}"
+
+    # -- Dynamic row/cell/item IDs (data-based, on inner content) --
     def row_id(self, index: int) -> str:  # ID for a table row
         return f"{self.prefix}-row-{index}"
 
