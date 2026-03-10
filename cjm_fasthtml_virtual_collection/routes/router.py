@@ -6,7 +6,7 @@
 __all__ = ['init_virtual_collection_router']
 
 # %% ../../nbs/routes/router.ipynb #711bb97a
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from fasthtml.common import APIRouter
 
@@ -16,7 +16,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_navigate, handle_navigate_to_index, handle_update_viewport,
-    handle_focus_row,
+    handle_focus_row, handle_activate,
 )
 
 # %% ../../nbs/routes/router.ipynb #a93f7b39
@@ -26,6 +26,7 @@ def init_virtual_collection_router(
     state_setter: Callable[[VirtualCollectionState], None],  # Function to save state
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
+    on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     """Initialize an APIRouter with all standard virtual collection routes."""
@@ -121,6 +122,25 @@ def init_virtual_collection_router(
         return result
 
     # -----------------------------------------------------------------
+    # Activate route
+    # -----------------------------------------------------------------
+
+    @router
+    def activate() -> Any:
+        """Activate the focused row via Space/Enter."""
+        if on_activate is None:
+            return ()
+        state = state_getter()
+        items = get_items()
+        result = handle_activate(
+            items=items, state=state, config=config, ids=ids,
+            render_cell=render_cell, on_activate=on_activate,
+            focus_url=_get_focus_url(),
+        )
+        state_setter(state)
+        return result
+
+    # -----------------------------------------------------------------
     # Build URL bundle from registered routes
     # -----------------------------------------------------------------
 
@@ -136,6 +156,7 @@ def init_virtual_collection_router(
         nav_to_index=nav_to_index.to(),
         update_viewport=update_viewport.to(),
         focus_row=_focus_url,
+        activate=activate.to(),
     )
 
     return router, urls

@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate', 'handle_navigate_to_index',
-           'handle_update_viewport', 'handle_focus_row']
+           'handle_update_viewport', 'handle_focus_row', 'handle_activate']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
 from typing import Any, Callable, List, Tuple
@@ -210,3 +210,21 @@ def handle_focus_row(
     old_cursor = state.cursor_index
     state.cursor_index = max(0, min(row_index, state.total_items - 1))
     return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+
+# %% ../../nbs/routes/handlers.ipynb #twfrtie2aw
+def handle_activate(
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    on_activate: Callable,                  # Consumer callback: (item, row_index, state) -> Tuple of OOB elements
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements from consumer callback
+    """Activate the focused row via Space/Enter. Delegates to consumer callback."""
+    cursor = state.cursor_index
+    if cursor < 0 or cursor >= state.total_items:
+        return ()
+    if not _is_cursor_visible(state):
+        return ()
+    return on_activate(items[cursor], cursor, state)

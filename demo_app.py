@@ -179,12 +179,24 @@ def main():
     # Collection router (Tier 2 — auto-wires nav routes)
     # -------------------------------------------------------------------------
 
+    from cjm_fasthtml_virtual_collection.components.table import render_cell_oob
+
+    def on_activate(item, row_index, st):
+        """Toggle selection on the focused row via Space/Enter."""
+        item.selected = not item.selected
+        select_col = config.columns[0]  # "select" column
+        return render_cell_oob(
+            item, select_col, row_index,
+            st.total_items, ids, render_cell,
+        )
+
     vc_router, urls = init_virtual_collection_router(
         config=config,
         state_getter=lambda: state,
         state_setter=lambda s: None,  # In-memory state, no persistence needed
         get_items=lambda: items,
         render_cell=render_cell,
+        on_activate=on_activate,
         route_prefix="/vc",
     )
 
@@ -195,7 +207,6 @@ def main():
     # Click-to-select route (cell-level OOB demo)
     # -------------------------------------------------------------------------
 
-    from cjm_fasthtml_virtual_collection.components.table import render_cell_oob
     from cjm_fasthtml_virtual_collection.routes.handlers import build_cursor_move_response
 
     @router

@@ -111,5 +111,8 @@ class VirtualCollectionUrls:
     # Focus
     focus_row: str = ""                 # Move cursor to a specific row (click/tap)
 
+    # Actions
+    activate: str = ""                  # Activate focused row (Space/Enter)
+
     # Sort
     sort: str = ""                      # Sort by column (header click)

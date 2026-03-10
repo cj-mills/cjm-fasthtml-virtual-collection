@@ -96,6 +96,25 @@ def create_collection_nav_actions(
             description="Last row",
             hint_group="Navigation",
         ),
+
+        # --- Activate focused row ---
+        KeyAction(
+            key="Enter",
+            htmx_trigger=button_ids.activate,
+            zone_ids=zone_ids,
+            not_modes=not_modes,
+            description="Activate row",
+            hint_group="Actions",
+        ),
+        KeyAction(
+            key=" ",
+            htmx_trigger=button_ids.activate,
+            zone_ids=zone_ids,
+            not_modes=not_modes,
+            description="Activate row",
+            hint_group="Actions",
+            show_in_hints=False,
+        ),
     )
 
 # %% ../../nbs/keyboard/actions.ipynb #5f99c1cd
@@ -103,7 +122,7 @@ def build_collection_url_map(
     button_ids: VirtualCollectionButtonIds,  # Button IDs for this collection
     urls: VirtualCollectionUrls,  # URL bundle for routing
 ) -> Dict[str, str]:  # Mapping of button ID -> route URL
-    """Build url_map for render_keyboard_system with all collection navigation buttons."""
+    """Build url_map for render_keyboard_system with all collection buttons."""
     return {
         button_ids.nav_up: urls.nav_up,
         button_ids.nav_down: urls.nav_down,
@@ -111,6 +130,7 @@ def build_collection_url_map(
         button_ids.nav_page_down: urls.nav_page_down,
         button_ids.nav_first: urls.nav_first,
         button_ids.nav_last: urls.nav_last,
+        button_ids.activate: urls.activate,
     }
 
 # %% ../../nbs/keyboard/actions.ipynb #5a7ed9r32zc

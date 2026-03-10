@@ -32,3 +32,7 @@ class VirtualCollectionButtonIds:
 
     @property
     def nav_last(self) -> str: return f"{self.prefix}-btn-nav-last"
+
+    # -- Action buttons --
+    @property
+    def activate(self) -> str: return f"{self.prefix}-btn-activate"
