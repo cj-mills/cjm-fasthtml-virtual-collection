@@ -117,6 +117,9 @@ def handle_navigate(
     focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     """Navigate in a direction. Mutates state in place."""
+    if state.total_items == 0:
+        return ()
+
     if direction in ('up', 'down'):
         # Reset cursor to top-most visible row if off-screen
         if not _is_cursor_visible(state):
@@ -152,6 +155,8 @@ def handle_navigate_to_index(
     focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements
     """Navigate to a specific index. Mutates state.window_start in place."""
+    if state.total_items == 0:
+        return ()
     state.window_start = clamp_window_start(
         target_index, state.visible_rows, state.total_items
     )
@@ -207,6 +212,8 @@ def handle_focus_row(
     focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """Move cursor to a specific row via click/tap. Mutates state in place."""
+    if state.total_items == 0:
+        return ()
     old_cursor = state.cursor_index
     state.cursor_index = max(0, min(row_index, state.total_items - 1))
     return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
