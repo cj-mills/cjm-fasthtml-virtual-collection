@@ -56,35 +56,35 @@ graph LR
     routes_router[routes.router<br/>routes.router]
 
     components_collection --> core_models
-    components_collection --> components_footer
-    components_collection --> components_scrollbar
     components_collection --> components_table
+    components_collection --> components_footer
     components_collection --> core_html_ids
+    components_collection --> components_scrollbar
     components_footer --> core_html_ids
-    components_footer --> core_windowing
     components_footer --> core_models
+    components_footer --> core_windowing
+    components_scrollbar --> core_models
     components_scrollbar --> core_html_ids
     components_scrollbar --> core_windowing
-    components_scrollbar --> core_models
     components_table --> core_models
     components_table --> core_html_ids
-    js_auto_fit --> core_html_ids
     js_auto_fit --> core_models
+    js_auto_fit --> core_html_ids
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
-    js_scrollbar --> core_button_ids
     js_scrollbar --> core_models
+    js_scrollbar --> core_button_ids
     js_touch --> core_html_ids
-    js_touch --> core_button_ids
     js_touch --> core_models
+    js_touch --> core_button_ids
     keyboard_actions --> core_html_ids
-    keyboard_actions --> core_button_ids
     keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
     routes_handlers --> core_models
-    routes_handlers --> components_footer
     routes_handlers --> core_windowing
     routes_handlers --> components_table
+    routes_handlers --> components_footer
     routes_handlers --> core_html_ids
     routes_router --> core_models
     routes_router --> routes_handlers
@@ -275,6 +275,7 @@ def render_virtual_collection(
     urls: VirtualCollectionUrls,                 # URL bundle
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
+    render_empty: Optional[Callable] = None,     # Empty state callback: () -> FT component
 ) -> Div:  # Complete collection element
     "Render a complete virtual collection with wrapper, table, scrollbar, and footer."
 ```
@@ -424,8 +425,14 @@ def handle_focus_row(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
+    on_refocus: Optional[Callable] = None,  # Callback when clicking already-focused row: (item, row_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
-    "Move cursor to a specific row via click/tap. Mutates state in place."
+    """
+    Move cursor to a specific row via click/tap.
+    
+    If `on_refocus` is provided and the clicked row is already the cursor,
+    delegates to `on_refocus` instead of the normal cursor-move logic.
+    """
 ```
 
 ``` python
@@ -701,6 +708,7 @@ def init_virtual_collection_router(
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
+    on_refocus: Optional[Callable] = None,               # Consumer callback when clicking already-focused row
     sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple

@@ -27,6 +27,7 @@ def init_virtual_collection_router(
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
+    on_refocus: Optional[Callable] = None,               # Consumer callback when clicking already-focused row
     sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
@@ -122,6 +123,7 @@ def init_virtual_collection_router(
             row_index=row_index, items=items, state=state,
             config=config, ids=ids, render_cell=render_cell,
             focus_url=_get_focus_url(),
+            on_refocus=on_refocus,
         )
         state_setter(state)
         return result

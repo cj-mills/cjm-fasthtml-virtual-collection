@@ -34,6 +34,7 @@ def render_virtual_collection(
     urls: VirtualCollectionUrls,                 # URL bundle
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
+    render_empty: Optional[Callable] = None,     # Empty state callback: () -> FT component
 ) -> Div:  # Complete collection element
     """Render a complete virtual collection with wrapper, table, scrollbar, and footer."""
     children = []
@@ -41,18 +42,28 @@ def render_virtual_collection(
     if config.layout == "table":
         assert render_cell is not None, "render_cell required for table layout"
 
-        # CSS Table: header group + body group
-        table = Div(
-            # Header group (with sort indicators if urls.sort is set)
-            Div(
-                render_header_row(config, ids, state=state, sort_url=urls.sort),
-                cls=combine_classes(table_display.header_group),
-            ),
-            # Body group (table-row-group with display:contents slots)
-            render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row),
-            id=ids.table,
-            cls=combine_classes(table_display, w.full, border_collapse.collapse),
-        )
+        # Empty state: replace table body with consumer-provided component
+        if state.total_items == 0 and render_empty is not None:
+            table = Div(
+                Div(
+                    render_header_row(config, ids, state=state, sort_url=urls.sort),
+                    cls=combine_classes(table_display.header_group),
+                ),
+                render_empty(),
+                id=ids.table,
+                cls=combine_classes(table_display, w.full, border_collapse.collapse),
+            )
+        else:
+            # CSS Table: header group + body group
+            table = Div(
+                Div(
+                    render_header_row(config, ids, state=state, sort_url=urls.sort),
+                    cls=combine_classes(table_display.header_group),
+                ),
+                render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row),
+                id=ids.table,
+                cls=combine_classes(table_display, w.full, border_collapse.collapse),
+            )
 
         # Wrapper (viewport-fit target) + scrollbar side-by-side
         # touch-pan-x: allow native horizontal pan for wide tables,

@@ -7,7 +7,7 @@ __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate'
            'handle_update_viewport', 'handle_focus_row', 'handle_activate', 'handle_sort']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
-from typing import Any, Callable, List, Tuple
+from typing import Any, Callable, List, Optional, Tuple
 
 from fasthtml.common import Hidden
 
@@ -210,12 +210,23 @@ def handle_focus_row(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
+    on_refocus: Optional[Callable] = None,  # Callback when clicking already-focused row: (item, row_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
-    """Move cursor to a specific row via click/tap. Mutates state in place."""
+    """Move cursor to a specific row via click/tap.
+
+    If `on_refocus` is provided and the clicked row is already the cursor,
+    delegates to `on_refocus` instead of the normal cursor-move logic.
+    """
     if state.total_items == 0:
         return ()
+    clamped = max(0, min(row_index, state.total_items - 1))
+
+    # Refocus: clicked row is already the cursor
+    if on_refocus is not None and clamped == state.cursor_index:
+        return on_refocus(items[clamped], clamped, state)
+
     old_cursor = state.cursor_index
-    state.cursor_index = max(0, min(row_index, state.total_items - 1))
+    state.cursor_index = clamped
     return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
 
 # %% ../../nbs/routes/handlers.ipynb #twfrtie2aw
