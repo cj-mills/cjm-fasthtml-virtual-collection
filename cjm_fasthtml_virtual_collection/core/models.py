@@ -26,9 +26,7 @@ class ColumnDef:
     """Column definition for table layout."""
     key: str                            # Unique column identifier (used in cell IDs)
     header: str = ""                    # Display text for header
-    width: str = "1fr"                  # CSS grid column width
     sortable: bool = False              # Whether column header is clickable for sort
-    resizable: bool = False             # Whether column border is draggable
     header_cls: str = ""                # Additional CSS classes for header cell
     cell_cls: str = ""                  # Additional CSS classes for data cells
 
@@ -38,7 +36,6 @@ class VirtualCollectionConfig:
     """Initialization-time configuration for a virtual collection."""
     prefix: str = ""                                    # HTML ID prefix (auto-generated if empty)
     layout: str = "table"                               # 'table' or 'grid'
-    row_height: int = 40                                # Row height in px (fixed)
 
     # Table layout
     columns: Tuple[ColumnDef, ...] = ()                 # Column definitions

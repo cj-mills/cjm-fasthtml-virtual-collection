@@ -16,14 +16,14 @@ pip install cjm_fasthtml_virtual_collection
     │   ├── collection.ipynb  # Main entry point for rendering a virtual collection.
     │   ├── footer.ipynb      # Footer component showing item range indicator.
     │   ├── scrollbar.ipynb   # Custom scrollbar component with proportional thumb for position indication.
-    │   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS Grid.
+    │   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS table display.
     ├── core/ (4)
     │   ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
     │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
     │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
     │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
     ├── js/ (4)
-    │   ├── auto_fit.ipynb   # JavaScript generator for automatic visible row count adjustment based on viewport height.
+    │   ├── auto_fit.ipynb   # JavaScript generator for overflow-based automatic visible row count adjustment.
     │   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
     │   ├── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
     │   └── touch.ipynb      # JavaScript generator for touch/swipe to navigation conversion.
@@ -55,35 +55,35 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_scrollbar
-    components_collection --> core_models
     components_collection --> components_table
+    components_collection --> core_models
+    components_collection --> components_scrollbar
     components_collection --> components_footer
     components_collection --> core_html_ids
-    components_footer --> core_models
     components_footer --> core_windowing
     components_footer --> core_html_ids
+    components_footer --> core_models
     components_scrollbar --> core_models
-    components_scrollbar --> core_html_ids
     components_scrollbar --> core_windowing
+    components_scrollbar --> core_html_ids
     components_table --> core_models
     components_table --> core_html_ids
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_html_ids
     js_scroll --> core_button_ids
-    js_scrollbar --> core_html_ids
-    js_scrollbar --> core_models
+    js_scroll --> core_html_ids
     js_scrollbar --> core_button_ids
-    js_touch --> core_html_ids
-    js_touch --> core_models
+    js_scrollbar --> core_models
+    js_scrollbar --> core_html_ids
     js_touch --> core_button_ids
+    js_touch --> core_models
+    js_touch --> core_html_ids
+    keyboard_actions --> core_button_ids
     keyboard_actions --> core_models
     keyboard_actions --> core_html_ids
-    keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
-    routes_handlers --> core_models
     routes_handlers --> components_table
+    routes_handlers --> core_models
     routes_handlers --> components_footer
     routes_handlers --> core_html_ids
     routes_router --> routes_handlers
@@ -159,8 +159,8 @@ def apply_nav_sync(
 
 ### js.auto_fit (`auto_fit.ipynb`)
 
-> JavaScript generator for automatic visible row count adjustment based
-> on viewport height.
+> JavaScript generator for overflow-based automatic visible row count
+> adjustment.
 
 #### Import
 
@@ -176,15 +176,17 @@ from cjm_fasthtml_virtual_collection.js.auto_fit import (
 ``` python
 def generate_auto_fit_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
-    config: VirtualCollectionConfig,      # Collection config (for row_height)
+    config: VirtualCollectionConfig,      # Collection config
     urls: VirtualCollectionUrls,          # URL bundle (for update_viewport)
-    debug: bool = False,                  # Enable console.log debugging
+    total_items: int = 0,                 # Total item count
+    initial_visible: int = 1,             # Initial visible row count
 ) -> str:  # JavaScript code fragment
     """
-    Generate JS for auto-fitting visible row count to viewport height.
+    Generate JS for overflow-based auto-fit of visible row count.
     
-    Uses ResizeObserver on the viewport element to detect height changes from
-    viewport-fit. Pure arithmetic: visibleRows = floor(viewportHeight / rowHeight).
+    Measures actual table overflow against wrapper height. Grows incrementally
+    with opacity:0 validation, shrinks via batch estimation. Adapted from the
+    cjm-fasthtml-card-stack auto_adjust pattern.
     """
 ```
 
@@ -274,7 +276,7 @@ def render_virtual_collection(
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
 ) -> Div:  # Complete collection element
-    "Render a complete virtual collection with header, viewport, scrollbar, and footer."
+    "Render a complete virtual collection with wrapper, table, scrollbar, and footer."
 ```
 
 ### components.footer (`footer.ipynb`)
@@ -461,25 +463,37 @@ class VirtualCollectionHtmlIds:
     
     def collection(self) -> str: return f"{self.prefix}-collection"
     
+        # -- Wrapper (viewport-fit target) --
+        @property
+        def wrapper(self) -> str: return f"{self.prefix}-wrapper"
+    
+    def wrapper(self) -> str: return f"{self.prefix}-wrapper"
+    
+        # -- Table container --
+        @property
+        def table(self) -> str: return f"{self.prefix}-table"
+    
+    def table(self) -> str: return f"{self.prefix}-table"
+    
         # -- Header --
         @property
         def header(self) -> str: return f"{self.prefix}-header"
     
     def header(self) -> str: return f"{self.prefix}-header"
     
-        # -- Viewport --
+        # -- Viewport (kept for viewport-fit compatibility) --
         @property
         def viewport(self) -> str: return f"{self.prefix}-viewport"
     
     def viewport(self) -> str: return f"{self.prefix}-viewport"
     
-        # -- Rows container --
+        # -- Rows container (table-row-group) --
         @property
         def rows(self) -> str: return f"{self.prefix}-rows"
     
     def rows(self) -> str: return f"{self.prefix}-rows"
     
-        # -- Slot IDs (position-based, stable across navigation) --
+        # -- Slot IDs (position-based, display:contents wrappers) --
         def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
     
     def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
@@ -565,9 +579,7 @@ class ColumnDef:
     
     key: str  # Unique column identifier (used in cell IDs)
     header: str = ''  # Display text for header
-    width: str = '1fr'  # CSS grid column width
     sortable: bool = False  # Whether column header is clickable for sort
-    resizable: bool = False  # Whether column border is draggable
     header_cls: str = ''  # Additional CSS classes for header cell
     cell_cls: str = ''  # Additional CSS classes for data cells
 ```
@@ -579,7 +591,6 @@ class VirtualCollectionConfig:
     
     prefix: str = ''  # HTML ID prefix (auto-generated if empty)
     layout: str = 'table'  # 'table' or 'grid'
-    row_height: int = 40  # Row height in px (fixed)
     columns: Tuple[ColumnDef, ...] = ()  # Column definitions
     sticky_left: int = 0  # Number of columns pinned left
     sticky_right: int = 0  # Number of columns pinned right
@@ -777,13 +788,12 @@ def generate_scrollbar_js(
 ### components.table (`table.ipynb`)
 
 > Table layout rendering: header row, data rows, and cells using CSS
-> Grid.
+> table display.
 
 #### Import
 
 ``` python
 from cjm_fasthtml_virtual_collection.components.table import (
-    grid_template_columns,
     render_header_cell,
     render_header_row,
     render_data_cell,
@@ -798,15 +808,9 @@ from cjm_fasthtml_virtual_collection.components.table import (
 #### Functions
 
 ``` python
-def grid_template_columns(columns: Tuple[ColumnDef, ...],  # Column definitions
-                         ) -> str:  # CSS grid-template-columns value
-    "Build CSS grid-template-columns from column definitions."
-```
-
-``` python
 def render_header_cell(column: ColumnDef,  # Column definition
                       ) -> Div:  # Header cell element
-    "Render a single header cell."
+    "Render a single table header cell."
 ```
 
 ``` python
@@ -851,8 +855,8 @@ def render_slot(
     render_cell: Callable,                 # Consumer cell render callback
     oob: bool = False,                     # Whether to render as OOB swap
     focus_url: str = "",                   # URL for click-to-focus (empty = disabled)
-) -> Div:  # Slot wrapper containing the data row
-    "Render a viewport slot wrapping a data row."
+) -> Div:  # Slot wrapper (display:contents) containing the data row
+    "Render a viewport slot wrapping a data row with display:contents."
 ```
 
 ``` python
@@ -862,8 +866,8 @@ def render_table_rows(items: list,                       # Full item list
                       ids: VirtualCollectionHtmlIds,      # HTML IDs
                       render_cell: Callable,              # Consumer cell render callback
                       focus_url: str = "",                # URL for click-to-focus (empty = disabled)
-                     ) -> Div:  # Rows container with slot wrappers
-    "Render all visible rows in the current window, wrapped in position-based slots."
+                     ) -> Div:  # Table-row-group container with slot wrappers
+    "Render all visible rows in the current window as a table-row-group."
 ```
 
 ``` python
@@ -912,7 +916,7 @@ def generate_touch_nav_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers (unused, kept for API consistency)
     urls: VirtualCollectionUrls,         # URL bundle for direct HTMX ajax calls
-    row_height: int = 40,                # Row height in px (step distance for drag)
+    step_distance: int = TOUCH_SWIPE_THRESHOLD,  # Drag distance in px to trigger one nav step
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where touch is suppressed
 ) -> str:  # JavaScript code fragment
     "Generate JS for touch gesture to navigation conversion."
@@ -939,8 +943,7 @@ from cjm_fasthtml_virtual_collection.core.windowing import (
     compute_window,
     compute_scrollbar,
     navigate,
-    navigate_cursor,
-    compute_visible_rows
+    navigate_cursor
 )
 ```
 
@@ -990,11 +993,4 @@ def navigate_cursor(
     total_items: int,     # Total item count
 ) -> Tuple[int, int, bool]:  # (new_cursor, new_window_start, window_changed)
     "Move cursor up/down within the visible window, scrolling at edges."
-```
-
-``` python
-def compute_visible_rows(viewport_height: float,  # Available height in px
-                         row_height: int,          # Row height in px
-                        ) -> int:                  # Number of visible rows
-    "Compute how many rows fit in the viewport."
 ```

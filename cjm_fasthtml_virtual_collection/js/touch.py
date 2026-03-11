@@ -24,7 +24,7 @@ def generate_touch_nav_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers (unused, kept for API consistency)
     urls: VirtualCollectionUrls,         # URL bundle for direct HTMX ajax calls
-    row_height: int = 40,                # Row height in px (step distance for drag)
+    step_distance: int = TOUCH_SWIPE_THRESHOLD,  # Drag distance in px to trigger one nav step
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where touch is suppressed
 ) -> str:  # JavaScript code fragment
     """Generate JS for touch gesture to navigation conversion."""
@@ -61,7 +61,7 @@ def generate_touch_nav_js(
             startX: 0,
             lastY: 0,
             lastStepY: 0,
-            stepDistance: {row_height},
+            stepDistance: {step_distance},
             isNavigating: false,
             stepsTriggered: 0,
             history: [],

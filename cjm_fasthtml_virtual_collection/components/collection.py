@@ -11,8 +11,10 @@ from typing import Any, Callable, List, Optional
 from fasthtml.common import Div, Hidden
 
 from cjm_fasthtml_tailwind.utilities.layout import overflow
+from cjm_fasthtml_tailwind.utilities.sizing import w
 from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import flex_display, flex_direction, flex
 from cjm_fasthtml_tailwind.utilities.interactivity import touch
+from cjm_fasthtml_tailwind.utilities.tables import table_display, border_collapse
 from cjm_fasthtml_tailwind.core.base import combine_classes
 
 from cjm_fasthtml_virtual_collection.core.models import (
@@ -33,28 +35,39 @@ def render_virtual_collection(
     render_cell: Optional[Callable] = None,      # Table layout cell render callback
     render_item: Optional[Callable] = None,      # Grid layout item render callback
 ) -> Div:  # Complete collection element
-    """Render a complete virtual collection with header, viewport, scrollbar, and footer."""
+    """Render a complete virtual collection with wrapper, table, scrollbar, and footer."""
     children = []
 
     if config.layout == "table":
         assert render_cell is not None, "render_cell required for table layout"
 
-        # Header (fixed, outside viewport)
-        children.append(render_header_row(config, ids))
+        # CSS Table: header group + body group
+        table = Div(
+            # Header group
+            Div(
+                render_header_row(config, ids),
+                cls=combine_classes(table_display.header_group),
+            ),
+            # Body group (table-row-group with display:contents slots)
+            render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row),
+            id=ids.table,
+            cls=combine_classes(table_display, w.full, border_collapse.collapse),
+        )
 
-        # Viewport body (rows) + scrollbar side-by-side
-        rows = render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row)
-        viewport = Div(
-            rows,
-            id=ids.viewport,
-            cls=combine_classes(flex(1), overflow.hidden),
+        # Wrapper (viewport-fit target) + scrollbar side-by-side
+        # touch-pan-x: allow native horizontal pan for wide tables,
+        # suppress vertical (handled by discrete navigation)
+        wrapper = Div(
+            table,
+            id=ids.wrapper,
+            cls=combine_classes(flex(1), overflow.y.hidden, touch.pan_x),
         )
 
         if config.show_scrollbar and state.total_items > state.visible_rows:
             scrollbar = render_scrollbar(state, config, ids)
-            body = Div(viewport, scrollbar, cls=combine_classes(flex_display))
+            body = Div(wrapper, scrollbar, cls=combine_classes(flex_display))
         else:
-            body = viewport
+            body = wrapper
 
         children.append(body)
 
@@ -76,5 +89,5 @@ def render_virtual_collection(
     return Div(
         *children,
         id=ids.collection,
-        cls=combine_classes(flex_display, flex_direction.col, touch.none),
+        cls=combine_classes(flex_display, flex_direction.col, touch.pan_x),
     )

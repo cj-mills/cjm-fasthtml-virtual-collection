@@ -18,19 +18,27 @@ class VirtualCollectionHtmlIds:
     @property
     def collection(self) -> str: return f"{self.prefix}-collection"
 
+    # -- Wrapper (viewport-fit target) --
+    @property
+    def wrapper(self) -> str: return f"{self.prefix}-wrapper"
+
+    # -- Table container --
+    @property
+    def table(self) -> str: return f"{self.prefix}-table"
+
     # -- Header --
     @property
     def header(self) -> str: return f"{self.prefix}-header"
 
-    # -- Viewport --
+    # -- Viewport (kept for viewport-fit compatibility) --
     @property
     def viewport(self) -> str: return f"{self.prefix}-viewport"
 
-    # -- Rows container --
+    # -- Rows container (table-row-group) --
     @property
     def rows(self) -> str: return f"{self.prefix}-rows"
 
-    # -- Slot IDs (position-based, stable across navigation) --
+    # -- Slot IDs (position-based, display:contents wrappers) --
     def slot_id(self, slot_index: int) -> str:  # ID for a viewport slot
         return f"{self.prefix}-slot-{slot_index}"
 

@@ -1,6 +1,7 @@
 """Demo application for cjm-fasthtml-virtual-collection library.
 
-Showcases virtualized collection rendering with a 500-item table.
+Showcases virtualized collection rendering with a 500-item table using
+CSS table display, overflow-based auto-fit, and display:contents slots.
 
 Run with: python demo_app.py
 """
@@ -60,6 +61,7 @@ def main():
     from cjm_fasthtml_daisyui.core.resources import get_daisyui_headers
     from cjm_fasthtml_daisyui.core.testing import create_theme_persistence_script
     from cjm_fasthtml_daisyui.utilities.semantic_colors import text_dui
+    from cjm_fasthtml_daisyui.components.actions.button import btn, btn_colors, btn_sizes
 
     from cjm_fasthtml_tailwind.utilities.spacing import p, m
     from cjm_fasthtml_tailwind.utilities.sizing import container, max_w
@@ -98,7 +100,6 @@ def main():
     print("=" * 70)
 
     # Create FastHTML app
-    from fasthtml.common import Link
     app, rt = fast_app(
         pico=False,
         hdrs=[
@@ -123,19 +124,19 @@ def main():
     config = VirtualCollectionConfig(
         prefix="demo",
         layout="table",
-        row_height=40,
         columns=(
-            ColumnDef(key="select", header="", width="40px"),
-            ColumnDef(key="name", header="Name", width="1fr", sortable=True, cell_cls="truncate"),
-            ColumnDef(key="size", header="Size", width="100px", sortable=True),
-            ColumnDef(key="modified", header="Modified", width="120px", sortable=True),
-            ColumnDef(key="type", header="Type", width="100px"),
+            ColumnDef(key="select", header=""),
+            ColumnDef(key="name", header="Name", sortable=True),
+            ColumnDef(key="size", header="Size", sortable=True),
+            ColumnDef(key="modified", header="Modified", sortable=True),
+            ColumnDef(key="type", header="Type"),
         ),
     )
 
+    # Start with 1 visible row — auto-fit grows from there
     state = VirtualCollectionState(
         total_items=len(items),
-        visible_rows=15,
+        visible_rows=1,
         cursor_index=0,
     )
 
@@ -159,10 +160,11 @@ def main():
         """Render a table cell based on column key."""
         from fasthtml.common import Span, Input
         from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_styles
+        from cjm_fasthtml_daisyui.components.data_input.checkbox import checkbox, checkbox_sizes
         if ctx.column.key == "select":
             return Input(
                 type="checkbox", checked=item.selected,
-                cls="checkbox checkbox-sm",
+                cls=combine_classes(checkbox, checkbox_sizes.sm),
                 hx_post=f"/select?row_index={ctx.row_index}",
                 hx_swap="none",
             )
@@ -255,22 +257,22 @@ def main():
 
     apply_nav_sync(kb_system, ids)
 
-    # Scroll wheel JS + scrollbar JS + auto-fit JS
+    # Scroll wheel JS + scrollbar JS (static — don't depend on state)
     scroll_js = generate_scroll_nav_js(ids, btn_ids)
-    touch_js = generate_touch_nav_js(ids, btn_ids, urls, row_height=config.row_height)
+    touch_js = generate_touch_nav_js(ids, btn_ids, urls)
     scrollbar_js = generate_scrollbar_js(ids, urls)
-    auto_fit_js = generate_auto_fit_js(ids, config, urls)
 
-    # Viewport-fit config — constrain viewport to available height, trigger auto-fit on resize
+    # Viewport-fit config — target wrapper, trigger auto-fit on resize
     vf_config = ViewportFitConfig(
         namespace=config.prefix,
-        target_id=ids.viewport,
+        target_id=ids.wrapper,
         resize_callback=auto_fit_callback_name(config),
+        enable_htmx_settle=False,  # Auto-fit handles settle events itself
         debug=False,
     )
 
     print(f"  Keyboard system: {len(nav_actions)} actions, {len(url_map)} buttons")
-    print(f"  Viewport-fit: target={ids.viewport}, auto-fit callback={auto_fit_callback_name(config)}")
+    print(f"  Viewport-fit: target={ids.wrapper}, auto-fit callback={auto_fit_callback_name(config)}")
 
     # -------------------------------------------------------------------------
     # Page routes
@@ -285,25 +287,26 @@ def main():
                 H1("Virtual Collection Demo",
                    cls=combine_classes(font_size._4xl, font_weight.bold, m.b(4))),
 
-                P("Virtualized collection rendering with discrete navigation, "
-                  "custom scrollbar, and cell-level HTMX updates.",
+                P("Virtualized collection rendering with CSS table display, "
+                  "overflow-based auto-fit, and cell-level HTMX updates.",
                   cls=combine_classes(font_size.lg, text_dui.base_content, m.b(6))),
 
                 Div(
                     H2("Features", cls=combine_classes(font_size._2xl, font_weight.bold, m.b(4))),
                     Div(
-                        P("Discrete navigation (card-stack approach)", cls=m.b(2)),
+                        P("CSS table display with automatic column width coordination", cls=m.b(2)),
+                        P("Overflow-based auto-fit (no fixed row height)", cls=m.b(2)),
+                        P("display:contents slots for OOB navigation", cls=m.b(2)),
                         P("Custom scrollbar with drag-to-jump", cls=m.b(2)),
                         P("Cell-level OOB HTMX updates", cls=m.b(2)),
-                        P("Auto-fit visible rows from viewport height", cls=m.b(2)),
-                        P("Sortable columns", cls=m.b(2)),
+                        P("Keyboard, wheel, and touch navigation", cls=m.b(2)),
                         cls=combine_classes(text_align.left, max_w.md, m.x.auto, m.b(8))
                     ),
                 ),
 
                 A("Open Table Demo",
                   href=demo_table.to(),
-                  cls="btn btn-primary btn-lg"),
+                  cls=combine_classes(btn, btn_colors.primary, btn_sizes.lg)),
 
                 cls=combine_classes(
                     container, max_w._4xl, m.x.auto, p(8), text_align.center
@@ -320,10 +323,17 @@ def main():
         """Table demo page — shows virtual collection with keyboard + wheel navigation."""
 
         def table_content():
+            # Auto-fit JS generated at render time to capture current visible_rows
+            auto_fit_js = generate_auto_fit_js(
+                ids, config, urls,
+                total_items=len(items),
+                initial_visible=state.visible_rows,
+            )
+
             return Div(
                 H2("Table Demo",
                    cls=combine_classes(font_size._2xl, font_weight.bold, m.b(4))),
-                P(f"{state.total_items:,} items · Auto-fit rows to viewport · "
+                P(f"{state.total_items:,} items · Overflow-based auto-fit · "
                   f"Arrow keys / PageUp / PageDown / Home / End / Mouse wheel",
                   cls=combine_classes(text_dui.base_content, m.b(4))),
 
