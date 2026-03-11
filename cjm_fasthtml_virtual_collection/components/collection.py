@@ -68,15 +68,16 @@ def render_virtual_collection(
         # Wrapper (viewport-fit target) + scrollbar side-by-side
         # touch-pan-x: allow native horizontal pan for wide tables,
         # suppress vertical (handled by discrete navigation)
+        # min-h-0: allow shrinking below content height in flex parents
         wrapper = Div(
             table,
             id=ids.wrapper,
-            cls=combine_classes(flex(1), overflow.y.hidden, touch.pan_x),
+            cls=combine_classes(flex(1), min_h._0, overflow.y.hidden, touch.pan_x),
         )
 
         if config.show_scrollbar and state.total_items > state.visible_rows:
             scrollbar = render_scrollbar(state, config, ids)
-            body = Div(wrapper, scrollbar, cls=combine_classes(flex_display))
+            body = Div(wrapper, scrollbar, cls=combine_classes(flex_display, grow(), min_h._0))
         else:
             body = wrapper
 
