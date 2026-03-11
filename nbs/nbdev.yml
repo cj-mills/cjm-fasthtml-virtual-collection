@@ -4,6 +4,6 @@ project:
 website:
   title: "cjm-fasthtml-virtual-collection"
   site-url: "https://cj-mills.github.io/cjm-fasthtml-virtual-collection"
-  description: "FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table and grid layouts, and cell-level HTMX updates."
+  description: "FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table layout, and cell-level HTMX updates."
   repo-branch: main
   repo-url: "https://github.com/cj-mills/cjm-fasthtml-virtual-collection"
