@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate', 'handle_navigate_to_index',
-           'handle_update_viewport', 'handle_focus_row', 'handle_activate']
+           'handle_update_viewport', 'handle_focus_row', 'handle_activate', 'handle_sort']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
 from typing import Any, Callable, List, Tuple
@@ -235,3 +235,38 @@ def handle_activate(
     if not _is_cursor_visible(state):
         return ()
     return on_activate(items[cursor], cursor, state)
+
+# %% ../../nbs/routes/handlers.ipynb #qswv325tauk
+def handle_sort(
+    column_key: str,                        # Column key to sort by
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    sort_callback: Callable,                # Consumer: (items, column_key, ascending) -> sorted items
+    sort_url: str = "",                     # Sort URL for header re-render
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements (header + rows + footer + window_start)
+    """Sort by column. Toggles direction if same column, resets window to start."""
+    if state.sort_column == column_key:
+        state.sort_ascending = not state.sort_ascending
+    else:
+        state.sort_column = column_key
+        state.sort_ascending = True
+
+    # Consumer sorts items in place
+    sort_callback(items, column_key, state.sort_ascending)
+
+    # Reset to top
+    state.window_start = 0
+
+    # Re-render header with updated sort indicators
+    from cjm_fasthtml_virtual_collection.components.table import render_header_row
+    header_oob = render_header_row(config, ids, state=state, sort_url=sort_url)
+    header_oob.attrs["hx-swap-oob"] = "outerHTML"
+
+    # Re-render visible rows
+    nav_response = build_nav_response(items, state, config, ids, render_cell, focus_url)
+
+    return (header_oob,) + nav_response

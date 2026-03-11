@@ -55,35 +55,35 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_table
     components_collection --> core_models
-    components_collection --> components_scrollbar
+    components_collection --> components_table
     components_collection --> core_html_ids
     components_collection --> components_footer
-    components_footer --> core_models
+    components_collection --> components_scrollbar
     components_footer --> core_html_ids
     components_footer --> core_windowing
-    components_scrollbar --> core_models
+    components_footer --> core_models
     components_scrollbar --> core_html_ids
+    components_scrollbar --> core_models
     components_scrollbar --> core_windowing
     components_table --> core_models
     components_table --> core_html_ids
-    js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_button_ids
+    js_auto_fit --> core_models
     js_scroll --> core_html_ids
-    js_scrollbar --> core_button_ids
+    js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
     js_scrollbar --> core_models
-    js_touch --> core_button_ids
+    js_scrollbar --> core_button_ids
     js_touch --> core_html_ids
     js_touch --> core_models
-    keyboard_actions --> core_button_ids
+    js_touch --> core_button_ids
     keyboard_actions --> core_html_ids
     keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
-    routes_handlers --> components_table
     routes_handlers --> core_models
+    routes_handlers --> components_table
     routes_handlers --> core_html_ids
     routes_handlers --> components_footer
     routes_router --> routes_handlers
@@ -316,7 +316,8 @@ from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_navigate_to_index,
     handle_update_viewport,
     handle_focus_row,
-    handle_activate
+    handle_activate,
+    handle_sort
 )
 ```
 
@@ -438,6 +439,21 @@ def handle_activate(
     focus_url: str = "",                    # URL for click-to-focus
 ) -> Tuple:  # OOB elements from consumer callback
     "Activate the focused row via Space/Enter. Delegates to consumer callback."
+```
+
+``` python
+def handle_sort(
+    column_key: str,                        # Column key to sort by
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state (mutated in place)
+    config: VirtualCollectionConfig,        # Collection config
+    ids: VirtualCollectionHtmlIds,          # HTML IDs
+    render_cell: Callable,                  # Consumer cell render callback
+    sort_callback: Callable,                # Consumer: (items, column_key, ascending) -> sorted items
+    sort_url: str = "",                     # Sort URL for header re-render
+    focus_url: str = "",                    # URL for click-to-focus
+) -> Tuple:  # OOB elements (header + rows + footer + window_start)
+    "Sort by column. Toggles direction if same column, resets window to start."
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -592,8 +608,6 @@ class VirtualCollectionConfig:
     prefix: str = ''  # HTML ID prefix (auto-generated if empty)
     layout: str = 'table'  # 'table' or 'grid'
     columns: Tuple[ColumnDef, ...] = ()  # Column definitions
-    sticky_left: int = 0  # Number of columns pinned left
-    sticky_right: int = 0  # Number of columns pinned right
     columns_per_row: int = 4  # Items per grid row
     grid_gap: str = '1rem'  # Gap between grid items
     disable_scroll_in_modes: Tuple[str, ...] = ()  # Mode-based scroll suppression
@@ -687,6 +701,7 @@ def init_virtual_collection_router(
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
+    sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     "Initialize an APIRouter with all standard virtual collection routes."
@@ -794,6 +809,7 @@ def generate_scrollbar_js(
 
 ``` python
 from cjm_fasthtml_virtual_collection.components.table import (
+    SORT_ICON_SIZE,
     render_header_cell,
     render_header_row,
     render_data_cell,
@@ -808,16 +824,27 @@ from cjm_fasthtml_virtual_collection.components.table import (
 #### Functions
 
 ``` python
+def _sort_indicator(column: ColumnDef,  # Column definition
+                    state: VirtualCollectionState,  # Collection state (for current sort)
+                   ) -> Any:  # Sort icon element or empty string
+    "Render sort indicator icon for a sortable header cell."
+```
+
+``` python
 def render_header_cell(column: ColumnDef,  # Column definition
+                       state: VirtualCollectionState,  # Collection state
+                       sort_url: str = "",  # Sort URL (empty = no click-to-sort)
                       ) -> Div:  # Header cell element
-    "Render a single table header cell."
+    "Render a single table header cell with optional sort indicator."
 ```
 
 ``` python
 def render_header_row(config: VirtualCollectionConfig,  # Collection config
                       ids: VirtualCollectionHtmlIds,     # HTML IDs
+                      state: VirtualCollectionState = None,  # Collection state (for sort indicators)
+                      sort_url: str = "",                # Sort URL (empty = no click-to-sort)
                      ) -> Div:  # Header row element
-    "Render the table header row."
+    "Render the table header row with optional sort indicators."
 ```
 
 ``` python
@@ -891,6 +918,12 @@ def render_row_oob(item: Any,                       # Data item
                    render_cell: Callable,            # Consumer cell render callback
                   ) -> Div:  # Row element with hx-swap-oob
     "Render a full row with OOB swap for targeted update."
+```
+
+#### Variables
+
+``` python
+SORT_ICON_SIZE = 3  # Tailwind size scale for sort indicator icons
 ```
 
 ### js.touch (`touch.ipynb`)

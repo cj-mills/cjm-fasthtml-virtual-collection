@@ -16,7 +16,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_navigate, handle_navigate_to_index, handle_update_viewport,
-    handle_focus_row, handle_activate,
+    handle_focus_row, handle_activate, handle_sort,
 )
 
 # %% ../../nbs/routes/router.ipynb #a93f7b39
@@ -27,17 +27,22 @@ def init_virtual_collection_router(
     get_items: Callable[[], list],                       # Function to get current items
     render_cell: Callable,                               # Cell render callback
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
+    sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     """Initialize an APIRouter with all standard virtual collection routes."""
     router = APIRouter(prefix=route_prefix)
     ids = VirtualCollectionHtmlIds(prefix=config.prefix)
 
-    # focus_row URL is resolved after route registration (forward reference)
+    # Forward references resolved after route registration
     _focus_url = ""
+    _sort_url = ""
 
     def _get_focus_url() -> str:
         return _focus_url
+
+    def _get_sort_url() -> str:
+        return _sort_url
 
     # -----------------------------------------------------------------
     # Navigation routes
@@ -141,10 +146,32 @@ def init_virtual_collection_router(
         return result
 
     # -----------------------------------------------------------------
+    # Sort route
+    # -----------------------------------------------------------------
+
+    @router
+    def sort(column: str) -> Any:
+        """Sort by column key."""
+        if sort_callback is None:
+            return ()
+        state = state_getter()
+        items = get_items()
+        result = handle_sort(
+            column_key=column, items=items, state=state,
+            config=config, ids=ids, render_cell=render_cell,
+            sort_callback=sort_callback,
+            sort_url=_get_sort_url(),
+            focus_url=_get_focus_url(),
+        )
+        state_setter(state)
+        return result
+
+    # -----------------------------------------------------------------
     # Build URL bundle from registered routes
     # -----------------------------------------------------------------
 
     _focus_url = focus_row.to()
+    _sort_url = sort.to()
 
     urls = VirtualCollectionUrls(
         nav_up=nav_up.to(),
@@ -157,6 +184,7 @@ def init_virtual_collection_router(
         update_viewport=update_viewport.to(),
         focus_row=_focus_url,
         activate=activate.to(),
+        sort=_sort_url,
     )
 
     return router, urls

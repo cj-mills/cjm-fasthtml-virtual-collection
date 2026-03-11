@@ -39,8 +39,6 @@ class VirtualCollectionConfig:
 
     # Table layout
     columns: Tuple[ColumnDef, ...] = ()                 # Column definitions
-    sticky_left: int = 0                                # Number of columns pinned left
-    sticky_right: int = 0                               # Number of columns pinned right
 
     # Grid layout
     columns_per_row: int = 4                            # Items per grid row

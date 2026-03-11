@@ -43,9 +43,9 @@ def render_virtual_collection(
 
         # CSS Table: header group + body group
         table = Div(
-            # Header group
+            # Header group (with sort indicators if urls.sort is set)
             Div(
-                render_header_row(config, ids),
+                render_header_row(config, ids, state=state, sort_url=urls.sort),
                 cls=combine_classes(table_display.header_group),
             ),
             # Body group (table-row-group with display:contents slots)

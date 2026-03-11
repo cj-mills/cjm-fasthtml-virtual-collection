@@ -193,6 +193,18 @@ def main():
             st.total_items, ids, render_cell,
         )
 
+    def sort_items(items_list, column_key, ascending):
+        """Sort items in place by column key."""
+        key_map = {
+            "name": lambda x: x.name,
+            "size": lambda x: x.size_bytes,
+            "modified": lambda x: x.modified,
+            "type": lambda x: x.file_type,
+        }
+        key_fn = key_map.get(column_key)
+        if key_fn:
+            items_list.sort(key=key_fn, reverse=not ascending)
+
     vc_router, urls = init_virtual_collection_router(
         config=config,
         state_getter=lambda: state,
@@ -200,6 +212,7 @@ def main():
         get_items=lambda: items,
         render_cell=render_cell,
         on_activate=on_activate,
+        sort_callback=sort_items,
         route_prefix="/vc",
     )
 
