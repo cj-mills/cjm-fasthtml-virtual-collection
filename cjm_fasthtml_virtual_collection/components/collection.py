@@ -11,8 +11,8 @@ from typing import Any, Callable, List, Optional
 from fasthtml.common import Div, Hidden
 
 from cjm_fasthtml_tailwind.utilities.layout import overflow
-from cjm_fasthtml_tailwind.utilities.sizing import w
-from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import flex_display, flex_direction, flex
+from cjm_fasthtml_tailwind.utilities.sizing import w, min_h
+from cjm_fasthtml_tailwind.utilities.flexbox_and_grid import flex_display, flex_direction, flex, grow
 from cjm_fasthtml_tailwind.utilities.interactivity import touch
 from cjm_fasthtml_tailwind.utilities.tables import table_display, border_collapse
 from cjm_fasthtml_tailwind.core.base import combine_classes
@@ -97,8 +97,9 @@ def render_virtual_collection(
         name="window_start",
     ))
 
+    # grow + min-h-0: fill flex parent without exceeding it
     return Div(
         *children,
         id=ids.collection,
-        cls=combine_classes(flex_display, flex_direction.col, touch.pan_x),
+        cls=combine_classes(flex_display, flex_direction.col, grow(), min_h._0, touch.pan_x),
     )
