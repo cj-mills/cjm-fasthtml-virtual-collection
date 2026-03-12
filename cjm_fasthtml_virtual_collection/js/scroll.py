@@ -21,7 +21,7 @@ def generate_scroll_nav_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where scroll is suppressed
-) -> str:  # JavaScript code fragment
+) -> str:  # JavaScript IIFE
     """Generate JS for scroll wheel to navigation conversion."""
     # Build optional mode check (safe fallback if keyboard nav not loaded)
     if disable_in_modes:
@@ -43,7 +43,7 @@ def generate_scroll_nav_js(
 
     trackpad_detect_threshold = 50
 
-    return f"""
+    return f"""(function() {{
         // === Scroll Navigation ===
         const _scrollState = {{ accumulatedDelta: 0, lastNavTime: 0 }};
         const _SCROLL_THRESHOLD = {SCROLL_THRESHOLD};
@@ -100,4 +100,4 @@ def generate_scroll_nav_js(
         document.body.addEventListener('htmx:afterSettle', function(evt) {{
             _setupScrollNav();
         }});
-    """
+    }})();"""

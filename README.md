@@ -55,11 +55,11 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_table
     components_collection --> core_models
+    components_collection --> components_table
+    components_collection --> components_footer
     components_collection --> core_html_ids
     components_collection --> components_scrollbar
-    components_collection --> components_footer
     components_footer --> core_html_ids
     components_footer --> core_windowing
     components_footer --> core_models
@@ -70,22 +70,22 @@ graph LR
     components_table --> core_html_ids
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_button_ids
     js_scroll --> core_html_ids
-    js_scrollbar --> core_button_ids
-    js_scrollbar --> core_models
+    js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
-    js_touch --> core_button_ids
-    js_touch --> core_models
+    js_scrollbar --> core_models
+    js_scrollbar --> core_button_ids
     js_touch --> core_html_ids
-    keyboard_actions --> core_button_ids
-    keyboard_actions --> core_models
+    js_touch --> core_models
+    js_touch --> core_button_ids
     keyboard_actions --> core_html_ids
+    keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
-    routes_handlers --> core_models
     routes_handlers --> components_table
-    routes_handlers --> core_html_ids
+    routes_handlers --> core_models
     routes_handlers --> components_footer
+    routes_handlers --> core_html_ids
     routes_router --> routes_handlers
     routes_router --> core_models
     routes_router --> core_html_ids
@@ -737,7 +737,7 @@ def generate_scroll_nav_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     button_ids: VirtualCollectionButtonIds,  # Button IDs for nav triggers
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where scroll is suppressed
-) -> str:  # JavaScript code fragment
+) -> str:  # JavaScript IIFE
     "Generate JS for scroll wheel to navigation conversion."
 ```
 
@@ -959,7 +959,7 @@ def generate_touch_nav_js(
     urls: VirtualCollectionUrls,         # URL bundle for direct HTMX ajax calls
     step_distance: int = TOUCH_SWIPE_THRESHOLD,  # Drag distance in px to trigger one nav step
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where touch is suppressed
-) -> str:  # JavaScript code fragment
+) -> str:  # JavaScript IIFE
     "Generate JS for touch gesture to navigation conversion."
 ```
 

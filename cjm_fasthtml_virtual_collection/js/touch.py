@@ -26,7 +26,7 @@ def generate_touch_nav_js(
     urls: VirtualCollectionUrls,         # URL bundle for direct HTMX ajax calls
     step_distance: int = TOUCH_SWIPE_THRESHOLD,  # Drag distance in px to trigger one nav step
     disable_in_modes: Tuple[str, ...] = (),  # Mode names where touch is suppressed
-) -> str:  # JavaScript code fragment
+) -> str:  # JavaScript IIFE
     """Generate JS for touch gesture to navigation conversion."""
     if disable_in_modes:
         modes_array = ', '.join(f"'{m}'" for m in disable_in_modes)
@@ -50,7 +50,7 @@ def generate_touch_nav_js(
         mode_guard = ""
         momentum_mode_guard = ""
 
-    return f"""
+    return f"""(function() {{
         // === Touch Navigation ===
         // Uses nav_to_index for scroll-only navigation (no cursor movement).
         // Reads window_start from hidden input to compute target index.
@@ -218,4 +218,4 @@ def generate_touch_nav_js(
         document.body.addEventListener('htmx:afterSettle', function(evt) {{
             _setupTouchNav();
         }});
-    """
+    }})();"""
