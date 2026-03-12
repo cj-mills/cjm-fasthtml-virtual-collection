@@ -29,6 +29,8 @@ def init_virtual_collection_router(
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
     on_refocus: Optional[Callable] = None,               # Consumer callback when clicking already-focused row
     sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
+    is_skippable: Optional[Callable] = None,             # Predicate: (item) -> bool, cursor skips these items
+    on_cursor_change: Optional[Callable] = None,         # Callback: (item, cursor_index, state) -> Tuple of extra OOB elements
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     """Initialize an APIRouter with all standard virtual collection routes."""
@@ -57,6 +59,8 @@ def init_virtual_collection_router(
             direction=direction, items=items, state=state,
             config=config, ids=ids, render_cell=render_cell,
             focus_url=_get_focus_url(),
+            is_skippable=is_skippable,
+            on_cursor_change=on_cursor_change,
         )
         state_setter(state)
         return result
@@ -124,6 +128,8 @@ def init_virtual_collection_router(
             config=config, ids=ids, render_cell=render_cell,
             focus_url=_get_focus_url(),
             on_refocus=on_refocus,
+            is_skippable=is_skippable,
+            on_cursor_change=on_cursor_change,
         )
         state_setter(state)
         return result
@@ -164,6 +170,8 @@ def init_virtual_collection_router(
             sort_callback=sort_callback,
             sort_url=_get_sort_url(),
             focus_url=_get_focus_url(),
+            is_skippable=is_skippable,
+            on_cursor_change=on_cursor_change,
         )
         state_setter(state)
         return result

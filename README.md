@@ -56,39 +56,39 @@ graph LR
     routes_router[routes.router<br/>routes.router]
 
     components_collection --> core_models
-    components_collection --> components_table
-    components_collection --> components_footer
     components_collection --> core_html_ids
+    components_collection --> components_table
     components_collection --> components_scrollbar
+    components_collection --> components_footer
     components_footer --> core_html_ids
-    components_footer --> core_windowing
     components_footer --> core_models
+    components_footer --> core_windowing
     components_scrollbar --> core_models
-    components_scrollbar --> core_windowing
     components_scrollbar --> core_html_ids
+    components_scrollbar --> core_windowing
     components_table --> core_models
     components_table --> core_html_ids
-    js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
+    js_auto_fit --> core_models
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
-    js_scrollbar --> core_models
     js_scrollbar --> core_button_ids
+    js_scrollbar --> core_models
     js_touch --> core_html_ids
-    js_touch --> core_models
     js_touch --> core_button_ids
+    js_touch --> core_models
     keyboard_actions --> core_html_ids
-    keyboard_actions --> core_models
     keyboard_actions --> core_button_ids
+    keyboard_actions --> core_models
+    routes_handlers --> core_models
+    routes_handlers --> core_html_ids
     routes_handlers --> core_windowing
     routes_handlers --> components_table
-    routes_handlers --> core_models
     routes_handlers --> components_footer
-    routes_handlers --> core_html_ids
-    routes_router --> routes_handlers
     routes_router --> core_models
     routes_router --> core_html_ids
+    routes_router --> routes_handlers
 ```
 
 *34 cross-module dependencies detected*
@@ -365,6 +365,16 @@ def _is_cursor_visible(
 ```
 
 ``` python
+def _append_cursor_change(
+    result: Tuple,                          # Base response tuple
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state
+    on_cursor_change: Optional[Callable],   # Callback: (item, cursor_index, state) -> Tuple
+) -> Tuple:  # Response with appended cursor change OOB elements
+    "Append on_cursor_change callback results to a response tuple."
+```
+
+``` python
 def handle_navigate(
     direction: str,                         # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
     items: list,                            # Full item list
@@ -373,6 +383,8 @@ def handle_navigate(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements
     "Navigate in a direction. Mutates state in place."
 ```
@@ -426,10 +438,13 @@ def handle_focus_row(
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
     on_refocus: Optional[Callable] = None,  # Callback when clicking already-focused row: (item, row_index, state) -> Tuple
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """
     Move cursor to a specific row via click/tap.
     
+    If the clicked row is skippable, returns empty (no-op).
     If `on_refocus` is provided and the clicked row is already the cursor,
     delegates to `on_refocus` instead of the normal cursor-move logic.
     """
@@ -459,6 +474,8 @@ def handle_sort(
     sort_callback: Callable,                # Consumer: (items, column_key, ascending) -> sorted items
     sort_url: str = "",                     # Sort URL for header re-render
     focus_url: str = "",                    # URL for click-to-focus
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (header + rows + footer + window_start)
     "Sort by column. Toggles direction if same column, resets window to start."
 ```
@@ -710,6 +727,8 @@ def init_virtual_collection_router(
     on_activate: Optional[Callable] = None,              # Consumer callback for Space/Enter on focused row
     on_refocus: Optional[Callable] = None,               # Consumer callback when clicking already-focused row
     sort_callback: Optional[Callable] = None,            # Consumer callback: (items, column_key, ascending) -> None
+    is_skippable: Optional[Callable] = None,             # Predicate: (item) -> bool, cursor skips these items
+    on_cursor_change: Optional[Callable] = None,         # Callback: (item, cursor_index, state) -> Tuple of extra OOB elements
     route_prefix: str = "/collection",                   # Route prefix
 ) -> Tuple[APIRouter, VirtualCollectionUrls]:  # (router, urls) tuple
     "Initialize an APIRouter with all standard virtual collection routes."
@@ -984,7 +1003,8 @@ from cjm_fasthtml_virtual_collection.core.windowing import (
     compute_window,
     compute_scrollbar,
     navigate,
-    navigate_cursor
+    navigate_cursor,
+    find_nearest_focusable
 )
 ```
 
@@ -1032,6 +1052,17 @@ def navigate_cursor(
     window_start: int,    # Current first visible row
     visible_rows: int,    # Number of visible rows
     total_items: int,     # Total item count
+    is_skippable: Optional[Callable[[int], bool]] = None,  # Predicate: index -> skip this item?
 ) -> Tuple[int, int, bool]:  # (new_cursor, new_window_start, window_changed)
     "Move cursor up/down within the visible window, scrolling at edges."
+```
+
+``` python
+def find_nearest_focusable(
+    index: int,           # Starting index to search from
+    total_items: int,     # Total item count
+    is_skippable: Optional[Callable[[int], bool]] = None,  # Predicate: index -> skip?
+    direction: int = 1,   # Search direction: 1 (forward) or -1 (backward)
+) -> int:  # Nearest focusable index, or -1 if none found
+    "Find the nearest non-skippable index from a starting position."
 ```

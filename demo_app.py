@@ -96,6 +96,7 @@ def main():
     from cjm_fasthtml_viewport_fit.components import render_viewport_fit_script
 
     import demos.constrained_container as cc_demo
+    import demos.skippable as sk_demo
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -296,6 +297,9 @@ def main():
     cc = cc_demo.setup()
     print(f"  Constrained container demo: {cc['title']}")
 
+    sk = sk_demo.setup()
+    print(f"  Skippable items demo: {sk['title']}")
+
     # -------------------------------------------------------------------------
     # Page routes
     # -------------------------------------------------------------------------
@@ -393,6 +397,14 @@ def main():
             wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
         )
 
+    @router
+    def demo_skippable(request):
+        """Skippable items demo page."""
+        return handle_htmx_request(
+            request, sk['page_content'],
+            wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
+        )
+
     # -------------------------------------------------------------------------
     # Navbar and route registration
     # -------------------------------------------------------------------------
@@ -403,12 +415,13 @@ def main():
             ("Home", index),
             ("Table", demo_table),
             ("Constrained", demo_constrained),
+            ("Skippable", demo_skippable),
         ],
         home_route=index,
         theme_selector=True
     )
 
-    register_routes(app, router, vc_router, cc['router'])
+    register_routes(app, router, vc_router, cc['router'], sk['router'])
 
     # Debug output
     print("\n" + "=" * 70)
@@ -439,6 +452,7 @@ if __name__ == "__main__":
     print(f"\n  http://{display_host}:{port}/              — Homepage")
     print(f"  http://{display_host}:{port}/demo_table    — Table demo")
     print(f"  http://{display_host}:{port}/demo_constrained — Constrained container demo")
+    print(f"  http://{display_host}:{port}/demo_skippable — Skippable items demo")
     print()
 
     timer = threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{port}"))

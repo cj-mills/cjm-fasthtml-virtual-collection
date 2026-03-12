@@ -17,6 +17,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 from cjm_fasthtml_virtual_collection.core.windowing import (
     navigate, navigate_cursor, clamp_window_start, compute_window,
+    find_nearest_focusable,
 )
 from ..components.table import render_slot, render_table_rows
 from ..components.footer import render_footer
@@ -107,6 +108,24 @@ def _is_cursor_visible(
     return state.window_start <= state.cursor_index < state.window_start + state.visible_rows
 
 
+def _append_cursor_change(
+    result: Tuple,                          # Base response tuple
+    items: list,                            # Full item list
+    state: VirtualCollectionState,          # Current state
+    on_cursor_change: Optional[Callable],   # Callback: (item, cursor_index, state) -> Tuple
+) -> Tuple:  # Response with appended cursor change OOB elements
+    """Append on_cursor_change callback results to a response tuple."""
+    if on_cursor_change is None:
+        return result
+    cursor = state.cursor_index
+    if cursor < 0 or cursor >= len(items):
+        return result
+    extra = on_cursor_change(items[cursor], cursor, state)
+    if extra:
+        return result + tuple(extra) if not isinstance(extra, tuple) else result + extra
+    return result
+
+
 def handle_navigate(
     direction: str,                         # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
     items: list,                            # Full item list
@@ -115,34 +134,60 @@ def handle_navigate(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements
     """Navigate in a direction. Mutates state in place."""
     if state.total_items == 0:
         return ()
 
-    if direction in ('up', 'down'):
-        # Reset cursor to top-most visible row if off-screen
-        if not _is_cursor_visible(state):
-            state.cursor_index = state.window_start
-            return build_nav_response(items, state, config, ids, render_cell, focus_url)
+    # Build index-based skip predicate from item-based one
+    _skip_idx = (lambda idx: is_skippable(items[idx])) if is_skippable else None
 
-        old_cursor = state.cursor_index
+    old_cursor = state.cursor_index
+
+    if direction in ('up', 'down'):
+        # Reset cursor to nearest focusable visible row if off-screen
+        if not _is_cursor_visible(state):
+            state.cursor_index = find_nearest_focusable(
+                state.window_start, state.total_items, _skip_idx, direction=1,
+            )
+            result = build_nav_response(items, state, config, ids, render_cell, focus_url)
+            if state.cursor_index != old_cursor:
+                result = _append_cursor_change(result, items, state, on_cursor_change)
+            return result
+
         new_cursor, new_window_start, window_changed = navigate_cursor(
             state.cursor_index, direction, state.window_start,
-            state.visible_rows, state.total_items,
+            state.visible_rows, state.total_items, is_skippable=_skip_idx,
         )
         state.cursor_index = new_cursor
         state.window_start = new_window_start
 
         if window_changed:
-            return build_nav_response(items, state, config, ids, render_cell, focus_url)
+            result = build_nav_response(items, state, config, ids, render_cell, focus_url)
         else:
-            return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+            result = build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
     else:
+        # Page/Home/End navigation
         state.window_start = navigate(
             state.window_start, direction, state.visible_rows, state.total_items
         )
-        return build_nav_response(items, state, config, ids, render_cell, focus_url)
+        # Move cursor to nearest focusable in the new window
+        if direction in ('first', 'page_up'):
+            target = state.window_start
+            search_dir = 1
+        else:
+            target = min(state.window_start + state.visible_rows - 1, state.total_items - 1)
+            search_dir = -1
+        state.cursor_index = find_nearest_focusable(
+            target, state.total_items, _skip_idx, direction=search_dir,
+        )
+        result = build_nav_response(items, state, config, ids, render_cell, focus_url)
+
+    if state.cursor_index != old_cursor:
+        result = _append_cursor_change(result, items, state, on_cursor_change)
+    return result
 
 # %% ../../nbs/routes/handlers.ipynb #bb86598d
 def handle_navigate_to_index(
@@ -211,9 +256,12 @@ def handle_focus_row(
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
     on_refocus: Optional[Callable] = None,  # Callback when clicking already-focused row: (item, row_index, state) -> Tuple
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """Move cursor to a specific row via click/tap.
 
+    If the clicked row is skippable, returns empty (no-op).
     If `on_refocus` is provided and the clicked row is already the cursor,
     delegates to `on_refocus` instead of the normal cursor-move logic.
     """
@@ -221,13 +269,20 @@ def handle_focus_row(
         return ()
     clamped = max(0, min(row_index, state.total_items - 1))
 
+    # Reject focus on skippable items
+    if is_skippable is not None and is_skippable(items[clamped]):
+        return ()
+
     # Refocus: clicked row is already the cursor
     if on_refocus is not None and clamped == state.cursor_index:
         return on_refocus(items[clamped], clamped, state)
 
     old_cursor = state.cursor_index
     state.cursor_index = clamped
-    return build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+    result = build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+    if state.cursor_index != old_cursor:
+        result = _append_cursor_change(result, items, state, on_cursor_change)
+    return result
 
 # %% ../../nbs/routes/handlers.ipynb #twfrtie2aw
 def handle_activate(
@@ -258,8 +313,12 @@ def handle_sort(
     sort_callback: Callable,                # Consumer: (items, column_key, ascending) -> sorted items
     sort_url: str = "",                     # Sort URL for header re-render
     focus_url: str = "",                    # URL for click-to-focus
+    is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
+    on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (header + rows + footer + window_start)
     """Sort by column. Toggles direction if same column, resets window to start."""
+    old_cursor = state.cursor_index
+
     if state.sort_column == column_key:
         state.sort_ascending = not state.sort_ascending
     else:
@@ -269,8 +328,10 @@ def handle_sort(
     # Consumer sorts items in place
     sort_callback(items, column_key, state.sort_ascending)
 
-    # Reset to top
+    # Reset to top and find nearest focusable cursor position
     state.window_start = 0
+    _skip_idx = (lambda idx: is_skippable(items[idx])) if is_skippable else None
+    state.cursor_index = find_nearest_focusable(0, state.total_items, _skip_idx, direction=1)
 
     # Re-render header with updated sort indicators
     from cjm_fasthtml_virtual_collection.components.table import render_header_row
@@ -280,4 +341,7 @@ def handle_sort(
     # Re-render visible rows
     nav_response = build_nav_response(items, state, config, ids, render_cell, focus_url)
 
-    return (header_oob,) + nav_response
+    result = (header_oob,) + nav_response
+    if state.cursor_index != old_cursor:
+        result = _append_cursor_change(result, items, state, on_cursor_change)
+    return result
