@@ -95,6 +95,8 @@ def main():
     from cjm_fasthtml_viewport_fit.models import ViewportFitConfig
     from cjm_fasthtml_viewport_fit.components import render_viewport_fit_script
 
+    import demos.constrained_container as cc_demo
+
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
     print("=" * 70)
@@ -288,6 +290,13 @@ def main():
     print(f"  Viewport-fit: target={ids.wrapper}, auto-fit callback={auto_fit_callback_name(config)}")
 
     # -------------------------------------------------------------------------
+    # Constrained container demo
+    # -------------------------------------------------------------------------
+
+    cc = cc_demo.setup()
+    print(f"  Constrained container demo: {cc['title']}")
+
+    # -------------------------------------------------------------------------
     # Page routes
     # -------------------------------------------------------------------------
 
@@ -376,6 +385,14 @@ def main():
             wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
         )
 
+    @router
+    def demo_constrained(request):
+        """Constrained container demo page."""
+        return handle_htmx_request(
+            request, cc['page_content'],
+            wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
+        )
+
     # -------------------------------------------------------------------------
     # Navbar and route registration
     # -------------------------------------------------------------------------
@@ -385,12 +402,13 @@ def main():
         nav_items=[
             ("Home", index),
             ("Table", demo_table),
+            ("Constrained", demo_constrained),
         ],
         home_route=index,
         theme_selector=True
     )
 
-    register_routes(app, router, vc_router)
+    register_routes(app, router, vc_router, cc['router'])
 
     # Debug output
     print("\n" + "=" * 70)
@@ -420,6 +438,7 @@ if __name__ == "__main__":
     print(f"Server: http://{display_host}:{port}")
     print(f"\n  http://{display_host}:{port}/              — Homepage")
     print(f"  http://{display_host}:{port}/demo_table    — Table demo")
+    print(f"  http://{display_host}:{port}/demo_constrained — Constrained container demo")
     print()
 
     timer = threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{port}"))
