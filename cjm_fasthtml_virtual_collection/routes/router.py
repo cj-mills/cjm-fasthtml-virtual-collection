@@ -119,7 +119,7 @@ def init_virtual_collection_router(
     # -----------------------------------------------------------------
 
     @router
-    def focus_row(row_index: int) -> Any:
+    def focus_row(request, row_index: int) -> Any:
         """Move cursor to a specific row via click/tap."""
         state = state_getter()
         items = get_items()
@@ -130,6 +130,7 @@ def init_virtual_collection_router(
             on_refocus=on_refocus,
             is_skippable=is_skippable,
             on_cursor_change=on_cursor_change,
+            request=request,
         )
         state_setter(state)
         return result
@@ -139,7 +140,7 @@ def init_virtual_collection_router(
     # -----------------------------------------------------------------
 
     @router
-    def activate() -> Any:
+    def activate(request) -> Any:
         """Activate the focused row via Space/Enter."""
         if on_activate is None:
             return ()
@@ -149,6 +150,7 @@ def init_virtual_collection_router(
             items=items, state=state, config=config, ids=ids,
             render_cell=render_cell, on_activate=on_activate,
             focus_url=_get_focus_url(),
+            request=request,
         )
         state_setter(state)
         return result

@@ -7,6 +7,7 @@ __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate'
            'handle_update_viewport', 'handle_focus_row', 'handle_activate', 'handle_sort']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
+import inspect
 from typing import Any, Callable, List, Optional, Tuple
 
 from fasthtml.common import Hidden
@@ -189,6 +190,20 @@ def handle_navigate(
         result = _append_cursor_change(result, items, state, on_cursor_change)
     return result
 
+# %% ../../nbs/routes/handlers.ipynb #yf0uovgd0kc
+def _call_action_callback(
+    callback: Callable,  # Consumer callback to invoke
+    item: Any,  # Item at the cursor position
+    row_index: int,  # Row index
+    state: VirtualCollectionState,  # Current VC state
+    request: Any = None,  # FastHTML request (passed if callback accepts it)
+) -> Any:  # Callback result
+    """Call an action callback, passing request if the callback signature accepts it."""
+    sig = inspect.signature(callback)
+    if 'request' in sig.parameters and request is not None:
+        return callback(item, row_index, state, request=request)
+    return callback(item, row_index, state)
+
 # %% ../../nbs/routes/handlers.ipynb #bb86598d
 def handle_navigate_to_index(
     target_index: int,                      # Target window_start
@@ -258,6 +273,7 @@ def handle_focus_row(
     on_refocus: Optional[Callable] = None,  # Callback when clicking already-focused row: (item, row_index, state) -> Tuple
     is_skippable: Optional[Callable[[Any], bool]] = None,  # Predicate: item -> skip?
     on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
+    request: Any = None,  # FastHTML request (passed to on_refocus if it accepts it)
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """Move cursor to a specific row via click/tap.
 
@@ -275,7 +291,7 @@ def handle_focus_row(
 
     # Refocus: clicked row is already the cursor
     if on_refocus is not None and clamped == state.cursor_index:
-        return on_refocus(items[clamped], clamped, state)
+        return _call_action_callback(on_refocus, items[clamped], clamped, state, request)
 
     old_cursor = state.cursor_index
     state.cursor_index = clamped
@@ -291,8 +307,9 @@ def handle_activate(
     config: VirtualCollectionConfig,        # Collection config
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
-    on_activate: Callable,                  # Consumer callback: (item, row_index, state) -> Tuple of OOB elements
+    on_activate: Callable,                  # Consumer callback: (item, row_index, state[, request]) -> Tuple of OOB elements
     focus_url: str = "",                    # URL for click-to-focus
+    request: Any = None,  # FastHTML request (passed to on_activate if it accepts it)
 ) -> Tuple:  # OOB elements from consumer callback
     """Activate the focused row via Space/Enter. Delegates to consumer callback."""
     cursor = state.cursor_index
@@ -300,7 +317,7 @@ def handle_activate(
         return ()
     if not _is_cursor_visible(state):
         return ()
-    return on_activate(items[cursor], cursor, state)
+    return _call_action_callback(on_activate, items[cursor], cursor, state, request)
 
 # %% ../../nbs/routes/handlers.ipynb #qswv325tauk
 def handle_sort(
