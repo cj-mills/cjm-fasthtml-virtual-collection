@@ -9,7 +9,7 @@ __all__ = ['render_scrollbar_thumb', 'render_scrollbar']
 from fasthtml.common import Div
 
 from cjm_fasthtml_tailwind.utilities.sizing import w, h
-from cjm_fasthtml_tailwind.utilities.layout import position
+from cjm_fasthtml_tailwind.utilities.layout import position, display_tw
 from cjm_fasthtml_tailwind.utilities.interactivity import cursor, select
 from cjm_fasthtml_tailwind.utilities.transitions_and_animation import transition, duration
 from cjm_fasthtml_tailwind.core.base import combine_classes
@@ -51,26 +51,30 @@ def render_scrollbar_thumb(
     return thumb
 
 # %% ../../nbs/components/scrollbar.ipynb #c126a242
+_TRACK_CLS = combine_classes(
+    w(3), position.relative, border_radius.field,
+    bg_dui.base_content.opacity(10),
+    cursor.pointer, select.none,
+)
+
+
 def render_scrollbar(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
     ids: VirtualCollectionHtmlIds,        # HTML IDs
 ) -> Div:  # Complete scrollbar (track + thumb)
     """Render the custom scrollbar with track and proportional thumb."""
-    # Don't show if all items visible
+    # Hide track when all items visible, but keep consistent structure
+    # to prevent layout flash during rapid OOB swaps
     if state.total_items <= state.visible_rows:
-        return Div(id=ids.scrollbar_track)
+        return Div(id=ids.scrollbar_track, cls=str(display_tw.hidden))
 
     thumb = render_scrollbar_thumb(state, config, ids)
 
     return Div(
         thumb,
         id=ids.scrollbar_track,
-        cls=combine_classes(
-            w(3), position.relative, border_radius.field,
-            bg_dui.base_content.opacity(10),
-            cursor.pointer, select.none,
-        ),
+        cls=_TRACK_CLS,
         data_total_items=str(state.total_items),
         data_visible_rows=str(state.visible_rows),
     )
