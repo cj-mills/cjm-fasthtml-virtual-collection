@@ -22,6 +22,7 @@ from cjm_fasthtml_virtual_collection.core.windowing import (
 )
 from ..components.table import render_slot, render_table_rows
 from ..components.footer import render_footer
+from ..components.scrollbar import render_scrollbar
 
 # %% ../../nbs/routes/handlers.ipynb #2adaa2a1
 def _render_window_start_oob(
@@ -236,6 +237,17 @@ def handle_navigate_to_index(
     return build_nav_response(items, state, config, ids, render_cell, focus_url)
 
 # %% ../../nbs/routes/handlers.ipynb #72c4a7a1
+def _render_scrollbar_oob(
+    state: VirtualCollectionState,     # Current state
+    config: VirtualCollectionConfig,   # Collection config
+    ids: VirtualCollectionHtmlIds,     # HTML IDs
+) -> Any:  # Scrollbar element with OOB swap
+    """Render OOB scrollbar with fresh data-total-items and data-visible-rows attributes."""
+    sb = render_scrollbar(state, config, ids)
+    sb.attrs["hx-swap-oob"] = "outerHTML"
+    return sb
+
+
 def _build_container_response(
     items: list,                            # Full item list
     state: VirtualCollectionState,          # Current state
@@ -243,12 +255,13 @@ def _build_container_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (container + footer + window_start input)
+) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start input)
     """Build OOB response that replaces the entire rows container with new slots."""
     rows_oob = render_table_rows(items, config, state, ids, render_cell, focus_url=focus_url)
     rows_oob.attrs["hx-swap-oob"] = "outerHTML"
     return (
         rows_oob,
+        _render_scrollbar_oob(state, config, ids),
         render_footer(state, ids, oob=True),
         _render_window_start_oob(state, ids),
     )
