@@ -131,6 +131,8 @@ def _scroll_to_cursor(
     state: VirtualCollectionState,  # Current state (mutated in place)
 ) -> None:
     """Scroll window to bring an off-screen cursor into view."""
+    if state.cursor_index < 0:
+        return
     window_end = state.window_start + state.visible_rows
     if state.cursor_index >= window_end:
         state.window_start = state.cursor_index - state.visible_rows + 1
@@ -269,6 +271,8 @@ def handle_update_viewport(
     state.window_start = clamp_window_start(
         state.window_start, state.visible_rows, state.total_items
     )
+    # Keep cursor visible after resize
+    _scroll_to_cursor(state)
     # Replace entire container — slot count changed
     return _build_container_response(items, state, config, ids, render_cell, focus_url)
 
