@@ -112,14 +112,18 @@ def navigate_cursor(
             while new_cursor <= max_cursor and is_skippable(new_cursor):
                 new_cursor += 1
             if new_cursor > max_cursor:
-                # No non-skippable item found ahead — stay put
-                return (cursor_index, window_start, False)
+                # No focusable item ahead — cursor stays, but window
+                # can scroll down to reveal trailing skippable items
+                new_ws = min(window_start + 1, max(0, total_items - visible_rows))
+                return (cursor_index, new_ws, new_ws != window_start)
         else:  # up
             while new_cursor >= 0 and is_skippable(new_cursor):
                 new_cursor -= 1
             if new_cursor < 0:
-                # No non-skippable item found behind — stay put
-                return (cursor_index, window_start, False)
+                # No focusable item behind — cursor stays, but window
+                # can scroll up to reveal leading skippable items
+                new_ws = max(0, window_start - 1)
+                return (cursor_index, new_ws, new_ws != window_start)
 
     # Check if cursor is still within visible window
     window_end = window_start + visible_rows  # exclusive

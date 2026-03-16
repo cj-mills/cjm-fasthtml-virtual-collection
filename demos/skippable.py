@@ -4,6 +4,11 @@ Simulates a grouped list where category headers are interspersed with data rows.
 Headers are skippable (cursor never lands on them). Arrow keys, Page Up/Down,
 Home/End, and click-to-focus all skip header rows.
 
+Edge cases to test:
+- Navigate up from first data row: window scrolls to reveal leading headers
+- Navigate down past last data row: window scrolls to reveal trailing headers
+- Cursor off-screen after resize: next keystroke scrolls to bring cursor into view
+
 The header row rendering tests the "refined option (a)" approach:
 render group content in the first cell, hide remaining cells so
 the first cell expands to fill the row width.
@@ -69,16 +74,52 @@ class SkipItem:
 def _generate_grouped_items() -> list[SkipItem]:
     """Generate items with category headers interspersed."""
     categories = [
-        ("Documents", [("report.pdf", "2.1 MB"), ("notes.txt", "12 KB"), ("readme.md", "4 KB")]),
-        ("Code", [("app.py", "8 KB"), ("utils.py", "3 KB"), ("test_app.py", "5 KB"),
-                  ("config.yaml", "1 KB"), ("setup.py", "2 KB")]),
-        ("Data", [("dataset.csv", "45 MB"), ("results.json", "128 KB")]),
-        ("Images", [("photo.jpg", "3.2 MB"), ("diagram.png", "890 KB"),
-                    ("icon.svg", "4 KB"), ("banner.webp", "156 KB")]),
-        ("Logs", [("app.log", "12 MB"), ("error.log", "2.3 MB"), ("access.log", "8 MB")]),
-        ("Config", [("settings.toml", "1 KB"), (".env", "512 B")]),
-        ("Archives", [("backup.tar.gz", "1.2 GB"), ("release.zip", "45 MB"),
-                      ("data_2025.tar.gz", "890 MB"), ("old_backup.zip", "234 MB")]),
+        ("Documents", [
+            ("report.pdf", "2.1 MB"), ("notes.txt", "12 KB"), ("readme.md", "4 KB"),
+            ("manual.pdf", "8.5 MB"), ("changelog.md", "1 KB"), ("license.txt", "2 KB"),
+        ]),
+        ("Code", [
+            ("app.py", "8 KB"), ("utils.py", "3 KB"), ("test_app.py", "5 KB"),
+            ("config.yaml", "1 KB"), ("setup.py", "2 KB"), ("models.py", "12 KB"),
+            ("routes.py", "6 KB"), ("helpers.py", "4 KB"),
+        ]),
+        ("Data", [
+            ("dataset.csv", "45 MB"), ("results.json", "128 KB"), ("cache.db", "12 MB"),
+            ("metrics.parquet", "890 KB"), ("index.sqlite", "3 MB"),
+        ]),
+        ("Images", [
+            ("photo.jpg", "3.2 MB"), ("diagram.png", "890 KB"),
+            ("icon.svg", "4 KB"), ("banner.webp", "156 KB"),
+            ("screenshot.png", "1.5 MB"), ("logo.svg", "8 KB"),
+            ("thumbnail.jpg", "45 KB"), ("background.webp", "2.1 MB"),
+        ]),
+        ("Audio", [
+            ("episode_01.mp3", "45 MB"), ("episode_02.mp3", "52 MB"),
+            ("interview.wav", "180 MB"), ("music.flac", "32 MB"),
+            ("voiceover.ogg", "8 MB"), ("podcast_final.mp3", "67 MB"),
+        ]),
+        ("Logs", [
+            ("app.log", "12 MB"), ("error.log", "2.3 MB"), ("access.log", "8 MB"),
+            ("debug.log", "45 MB"), ("audit.log", "1.2 MB"),
+        ]),
+        ("Config", [
+            ("settings.toml", "1 KB"), (".env", "512 B"), ("docker-compose.yml", "3 KB"),
+            ("nginx.conf", "2 KB"), ("supervisord.conf", "1 KB"),
+        ]),
+        ("Archives", [
+            ("backup.tar.gz", "1.2 GB"), ("release.zip", "45 MB"),
+            ("data_2025.tar.gz", "890 MB"), ("old_backup.zip", "234 MB"),
+            ("source_code.tar.xz", "12 MB"), ("assets.zip", "567 MB"),
+        ]),
+        ("Videos", [
+            ("tutorial.mp4", "1.8 GB"), ("demo.webm", "234 MB"),
+            ("recording.mkv", "3.4 GB"), ("clip.mp4", "89 MB"),
+        ]),
+        ("Scripts", [
+            ("deploy.sh", "3 KB"), ("backup.sh", "2 KB"), ("migrate.py", "5 KB"),
+            ("cleanup.sh", "1 KB"), ("init_db.sql", "8 KB"), ("seed.py", "4 KB"),
+            ("test_all.sh", "1 KB"),
+        ]),
     ]
     result = []
     for cat_name, files in categories:
@@ -126,7 +167,7 @@ def setup():
             Span(f"Focused: ", cls=font_weight.semibold),
             Span(item.name, cls=combine_classes(font_weight.bold, text_dui.primary)),
             Span(f" ({item.value})", cls=text_dui.base_content.opacity(70)) if item.value else None,
-            Span(f" — row {index}", cls=combine_classes(font_size.sm, text_dui.base_content.opacity(50))),
+            Span(f" — row {index} of {len(items)}", cls=combine_classes(font_size.sm, text_dui.base_content.opacity(50))),
             id=detail_panel_id,
             hx_swap_oob="innerHTML",
             cls=combine_classes(p(3), bg_dui.base_200, rounded(), font_size.sm),

@@ -127,6 +127,20 @@ def _append_cursor_change(
     return result
 
 
+def _scroll_to_cursor(
+    state: VirtualCollectionState,  # Current state (mutated in place)
+) -> None:
+    """Scroll window to bring an off-screen cursor into view."""
+    window_end = state.window_start + state.visible_rows
+    if state.cursor_index >= window_end:
+        state.window_start = state.cursor_index - state.visible_rows + 1
+    elif state.cursor_index < state.window_start:
+        state.window_start = state.cursor_index
+    state.window_start = clamp_window_start(
+        state.window_start, state.visible_rows, state.total_items
+    )
+
+
 def handle_navigate(
     direction: str,                         # 'up', 'down', 'page_up', 'page_down', 'first', 'last'
     items: list,                            # Full item list
@@ -148,14 +162,11 @@ def handle_navigate(
     old_cursor = state.cursor_index
 
     if direction in ('up', 'down'):
-        # Reset cursor to nearest focusable visible row if off-screen
+        # If cursor is off-screen, scroll window to bring it into view
+        # then proceed with normal navigation from the now-visible cursor
         if not _is_cursor_visible(state):
-            state.cursor_index = find_nearest_focusable(
-                state.window_start, state.total_items, _skip_idx, direction=1,
-            )
+            _scroll_to_cursor(state)
             result = build_nav_response(items, state, config, ids, render_cell, focus_url)
-            if state.cursor_index != old_cursor:
-                result = _append_cursor_change(result, items, state, on_cursor_change)
             return result
 
         new_cursor, new_window_start, window_changed = navigate_cursor(
