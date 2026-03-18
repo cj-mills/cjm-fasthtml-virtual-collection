@@ -4,7 +4,7 @@
 
 # %% auto #0
 __all__ = ['SORT_ICON_SIZE', 'render_header_cell', 'render_header_row', 'render_data_cell', 'render_data_row', 'render_slot',
-           'render_table_rows', 'render_cell_oob', 'render_row_oob']
+           'render_table_rows', 'render_cell_oob', 'render_row_oob', 'render_visible_cells_oob']
 
 # %% ../../nbs/components/table.ipynb #78dad85f
 from typing import Any, Callable, List, Optional, Tuple
@@ -246,3 +246,27 @@ def render_row_oob(item: Any,                       # Data item
     row = render_data_row(item, row_index, config, state, ids, render_cell)
     row.attrs["hx-swap-oob"] = "outerHTML"
     return row
+
+
+def render_visible_cells_oob(
+    column: ColumnDef,                # Column to re-render
+    item_indices: List[int],          # Item indices that changed
+    items: list,                      # Full items list
+    state: VirtualCollectionState,    # Current VC state (for window bounds)
+    ids: VirtualCollectionHtmlIds,    # HTML IDs
+    render_cell: Callable,            # Consumer cell render callback
+) -> Tuple[Div, ...]:                # OOB cell elements for visible items only
+    """Batch-render OOB cell updates for specified items within the visible window."""
+    from cjm_fasthtml_virtual_collection.core.windowing import compute_window
+
+    render_start, render_end = compute_window(
+        state.window_start, state.visible_rows, state.total_items
+    )
+    oob_cells = []
+    for idx in item_indices:
+        if render_start <= idx < render_end:
+            oob_cells.append(render_cell_oob(
+                items[idx], column, idx, state.total_items,
+                ids, render_cell, is_cursor=(idx == state.cursor_index),
+            ))
+    return tuple(oob_cells)
