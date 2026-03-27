@@ -103,6 +103,8 @@ def main():
     print("=" * 70)
 
     # Create FastHTML app
+    APP_ID = "vcoll"
+
     app, rt = fast_app(
         pico=False,
         hdrs=[
@@ -111,7 +113,8 @@ def main():
         ],
         title="Virtual Collection Demo",
         htmlkw={'data-theme': 'light'},
-        secret_key="demo-secret-key"
+        session_cookie=f'session_{APP_ID}_',
+        secret_key=f'{APP_ID}-demo-secret',
     )
 
     router = APIRouter(prefix="")
