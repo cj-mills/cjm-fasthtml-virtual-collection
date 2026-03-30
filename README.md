@@ -21,7 +21,7 @@ pip install cjm_fasthtml_virtual_collection
     │   ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
     │   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
     │   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
-    │   └── windowing.ipynb   # Pure math functions for viewport window and scrollbar calculations.
+    │   └── windowing.ipynb   # Pure math functions for viewport window calculations and navigation.
     ├── js/ (4)
     │   ├── auto_fit.ipynb   # JavaScript generator for overflow-based automatic visible row count adjustment.
     │   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
@@ -55,44 +55,42 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_scrollbar
     components_collection --> core_models
-    components_collection --> components_footer
     components_collection --> components_table
     components_collection --> core_html_ids
+    components_collection --> components_footer
+    components_collection --> components_scrollbar
+    components_footer --> core_models
     components_footer --> core_html_ids
     components_footer --> core_windowing
-    components_footer --> core_models
-    components_scrollbar --> core_windowing
     components_scrollbar --> core_models
     components_scrollbar --> core_html_ids
     components_table --> core_models
     components_table --> core_html_ids
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_html_ids
     js_scroll --> core_button_ids
+    js_scroll --> core_html_ids
     js_scrollbar --> core_html_ids
-    js_scrollbar --> core_button_ids
     js_scrollbar --> core_models
-    js_touch --> core_html_ids
     js_touch --> core_button_ids
+    js_touch --> core_html_ids
     js_touch --> core_models
-    keyboard_actions --> core_html_ids
     keyboard_actions --> core_button_ids
     keyboard_actions --> core_models
-    routes_handlers --> components_scrollbar
+    keyboard_actions --> core_html_ids
     routes_handlers --> core_models
-    routes_handlers --> components_table
     routes_handlers --> core_windowing
-    routes_handlers --> components_footer
+    routes_handlers --> components_table
     routes_handlers --> core_html_ids
-    routes_router --> routes_handlers
+    routes_handlers --> components_footer
+    routes_handlers --> components_scrollbar
     routes_router --> core_models
+    routes_router --> routes_handlers
     routes_router --> core_html_ids
 ```
 
-*35 cross-module dependencies detected*
+*33 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -427,7 +425,7 @@ def _render_scrollbar_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> Any:  # Scrollbar element with OOB swap
-    "Render OOB scrollbar with fresh data-total-items and data-visible-rows attributes."
+    "Render OOB scrollbar with fresh data-total-items and data-visible-count attributes."
 ```
 
 ``` python
@@ -815,6 +813,15 @@ from cjm_fasthtml_virtual_collection.components.scrollbar import (
 #### Functions
 
 ``` python
+def _map_to_scrollbar(
+    state: VirtualCollectionState,
+    config: VirtualCollectionConfig,
+    ids: VirtualCollectionHtmlIds,
+):  # (ScrollbarState, ScrollbarConfig, ScrollbarIds)
+    "Map VC types to scrollbar lib types."
+```
+
+``` python
 def render_scrollbar_thumb(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
@@ -832,12 +839,6 @@ def render_scrollbar(
     ids: VirtualCollectionHtmlIds,        # HTML IDs
 ) -> Div:  # Complete scrollbar (track + thumb)
     "Render the custom scrollbar with track and proportional thumb."
-```
-
-#### Variables
-
-``` python
-_TRACK_CLS
 ```
 
 ### js.scrollbar (`scrollbar.ipynb`)
@@ -1042,7 +1043,7 @@ TOUCH_VELOCITY_SAMPLES: int = 5
 
 ### core.windowing (`windowing.ipynb`)
 
-> Pure math functions for viewport window and scrollbar calculations.
+> Pure math functions for viewport window calculations and navigation.
 
 #### Import
 
@@ -1050,7 +1051,6 @@ TOUCH_VELOCITY_SAMPLES: int = 5
 from cjm_fasthtml_virtual_collection.core.windowing import (
     clamp_window_start,
     compute_window,
-    compute_scrollbar,
     navigate,
     navigate_cursor,
     find_nearest_focusable
@@ -1073,16 +1073,6 @@ def compute_window(window_start: int,   # First visible row index (already clamp
                    total_items: int,     # Total item count
                   ) -> Tuple[int, int]:  # (render_start, render_end) exclusive end
     "Compute the range of rows to render."
-```
-
-``` python
-def compute_scrollbar(window_start: int,      # First visible row index
-                      visible_rows: int,       # Number of visible rows
-                      total_items: int,        # Total item count
-                      track_height: float,     # Scrollbar track height in px
-                      min_thumb_height: int = 24,  # Minimum thumb height in px
-                     ) -> Tuple[float, float]: # (thumb_top_percent, thumb_height_percent)
-    "Compute scrollbar thumb position and size as percentages."
 ```
 
 ``` python

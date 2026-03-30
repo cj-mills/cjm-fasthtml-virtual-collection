@@ -8,20 +8,36 @@ __all__ = ['render_scrollbar_thumb', 'render_scrollbar']
 # %% ../../nbs/components/scrollbar.ipynb #4f4abe73
 from fasthtml.common import Div
 
-from cjm_fasthtml_tailwind.utilities.sizing import w, h
-from cjm_fasthtml_tailwind.utilities.layout import position, display_tw
-from cjm_fasthtml_tailwind.utilities.interactivity import cursor, select
-from cjm_fasthtml_tailwind.utilities.transitions_and_animation import transition, duration
-from cjm_fasthtml_tailwind.core.base import combine_classes
-
-from cjm_fasthtml_daisyui.utilities.semantic_colors import bg_dui
-from cjm_fasthtml_daisyui.utilities.border_radius import border_radius
-
 from ..core.models import VirtualCollectionConfig, VirtualCollectionState
 from ..core.html_ids import VirtualCollectionHtmlIds
-from ..core.windowing import compute_scrollbar
+
+from cjm_fasthtml_virtual_scrollbar.core.models import ScrollbarConfig, ScrollbarState, ScrollbarIds
+from cjm_fasthtml_virtual_scrollbar.components.scrollbar import (
+    render_scrollbar as _sb_render_scrollbar,
+    render_scrollbar_thumb as _sb_render_scrollbar_thumb,
+)
 
 # %% ../../nbs/components/scrollbar.ipynb #c3d7bdfa
+def _map_to_scrollbar(
+    state: VirtualCollectionState,
+    config: VirtualCollectionConfig,
+    ids: VirtualCollectionHtmlIds,
+):  # (ScrollbarState, ScrollbarConfig, ScrollbarIds)
+    """Map VC types to scrollbar lib types."""
+    sb_state = ScrollbarState(
+        position=state.window_start,
+        visible_count=state.visible_rows,
+        total_items=state.total_items,
+    )
+    sb_config = ScrollbarConfig(
+        prefix=config.prefix,
+        show_scrollbar=config.show_scrollbar,
+        min_thumb_height=config.min_thumb_height,
+    )
+    sb_ids = ScrollbarIds(prefix=ids.prefix)
+    return sb_state, sb_config, sb_ids
+
+
 def render_scrollbar_thumb(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
@@ -30,51 +46,15 @@ def render_scrollbar_thumb(
     oob: bool = False,                    # Whether to include hx-swap-oob
 ) -> Div:  # Thumb element
     """Render the scrollbar thumb at the correct position."""
-    thumb_top, thumb_height = compute_scrollbar(
-        state.window_start, state.visible_rows, state.total_items,
-        track_height, config.min_thumb_height,
-    )
-
-    thumb = Div(
-        id=ids.scrollbar_thumb,
-        cls=combine_classes(
-            position.absolute, w.full, border_radius.field,
-            bg_dui.base_content.opacity(30),
-            cursor.grab,
-        ),
-        style=f"top: {thumb_top:.2f}%; height: {thumb_height:.2f}%",
-    )
-
-    if oob:
-        thumb.attrs["hx-swap-oob"] = "outerHTML"
-
-    return thumb
+    sb_state, sb_config, sb_ids = _map_to_scrollbar(state, config, ids)
+    return _sb_render_scrollbar_thumb(sb_state, sb_config, sb_ids, track_height, oob)
 
 # %% ../../nbs/components/scrollbar.ipynb #c126a242
-_TRACK_CLS = combine_classes(
-    w(3), position.relative, border_radius.field,
-    bg_dui.base_content.opacity(10),
-    cursor.pointer, select.none,
-)
-
-
 def render_scrollbar(
     state: VirtualCollectionState,       # Collection state
     config: VirtualCollectionConfig,      # Collection config
     ids: VirtualCollectionHtmlIds,        # HTML IDs
 ) -> Div:  # Complete scrollbar (track + thumb)
     """Render the custom scrollbar with track and proportional thumb."""
-    # Hide track when all items visible, but keep consistent structure
-    # to prevent layout flash during rapid OOB swaps
-    if state.total_items <= state.visible_rows:
-        return Div(id=ids.scrollbar_track, cls=str(display_tw.hidden))
-
-    thumb = render_scrollbar_thumb(state, config, ids)
-
-    return Div(
-        thumb,
-        id=ids.scrollbar_track,
-        cls=_TRACK_CLS,
-        data_total_items=str(state.total_items),
-        data_visible_rows=str(state.visible_rows),
-    )
+    sb_state, sb_config, sb_ids = _map_to_scrollbar(state, config, ids)
+    return _sb_render_scrollbar(sb_state, sb_config, sb_ids)

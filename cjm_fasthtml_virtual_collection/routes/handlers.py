@@ -242,7 +242,7 @@ def _render_scrollbar_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> Any:  # Scrollbar element with OOB swap
-    """Render OOB scrollbar with fresh data-total-items and data-visible-rows attributes."""
+    """Render OOB scrollbar with fresh data-total-items and data-visible-count attributes."""
     sb = render_scrollbar(state, config, ids)
     sb.attrs["hx-swap-oob"] = "outerHTML"
     return sb
