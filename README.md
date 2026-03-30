@@ -55,14 +55,14 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> core_models
-    components_collection --> components_table
-    components_collection --> core_html_ids
     components_collection --> components_footer
     components_collection --> components_scrollbar
+    components_collection --> components_table
+    components_collection --> core_models
+    components_collection --> core_html_ids
+    components_footer --> core_windowing
     components_footer --> core_models
     components_footer --> core_html_ids
-    components_footer --> core_windowing
     components_scrollbar --> core_models
     components_scrollbar --> core_html_ids
     components_table --> core_models
@@ -71,22 +71,22 @@ graph LR
     js_auto_fit --> core_html_ids
     js_scroll --> core_button_ids
     js_scroll --> core_html_ids
-    js_scrollbar --> core_html_ids
     js_scrollbar --> core_models
+    js_scrollbar --> core_html_ids
+    js_touch --> core_models
     js_touch --> core_button_ids
     js_touch --> core_html_ids
-    js_touch --> core_models
-    keyboard_actions --> core_button_ids
     keyboard_actions --> core_models
     keyboard_actions --> core_html_ids
-    routes_handlers --> core_models
+    keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
-    routes_handlers --> components_table
-    routes_handlers --> core_html_ids
     routes_handlers --> components_footer
     routes_handlers --> components_scrollbar
-    routes_router --> core_models
+    routes_handlers --> core_models
+    routes_handlers --> components_table
+    routes_handlers --> core_html_ids
     routes_router --> routes_handlers
+    routes_router --> core_models
     routes_router --> core_html_ids
 ```
 
@@ -332,6 +332,15 @@ def _render_window_start_oob(
 ```
 
 ``` python
+def _render_scrollbar_nav_oob(
+    state: VirtualCollectionState,     # Current state
+    config: VirtualCollectionConfig,   # Collection config
+    ids: VirtualCollectionHtmlIds,     # HTML IDs
+) -> 'Any':  # Scrollbar element with OOB swap (or None if disabled)
+    "Render OOB scrollbar with fresh data-position for self-contained sync."
+```
+
+``` python
 def build_nav_response(
     items: list,                            # Full item list
     state: VirtualCollectionState,          # Current state (already mutated)
@@ -339,8 +348,8 @@ def build_nav_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input)
-    "Build OOB response for navigation: all visible slots + footer + window_start."
+) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input + scrollbar)
+    "Build OOB response for navigation: all visible slots + footer + window_start + scrollbar."
 ```
 
 ``` python
@@ -352,7 +361,7 @@ def build_cursor_move_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
+) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input + scrollbar)
     "Build OOB response for cursor-only move: swap just the affected slots."
 ```
 

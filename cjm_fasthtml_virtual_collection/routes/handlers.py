@@ -38,6 +38,19 @@ def _render_window_start_oob(
     )
 
 
+def _render_scrollbar_nav_oob(
+    state: VirtualCollectionState,     # Current state
+    config: VirtualCollectionConfig,   # Collection config
+    ids: VirtualCollectionHtmlIds,     # HTML IDs
+) -> 'Any':  # Scrollbar element with OOB swap (or None if disabled)
+    """Render OOB scrollbar with fresh data-position for self-contained sync."""
+    if not config.show_scrollbar:
+        return None
+    sb = render_scrollbar(state, config, ids)
+    sb.attrs["hx-swap-oob"] = "outerHTML"
+    return sb
+
+
 def build_nav_response(
     items: list,                            # Full item list
     state: VirtualCollectionState,          # Current state (already mutated)
@@ -45,8 +58,8 @@ def build_nav_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input)
-    """Build OOB response for navigation: all visible slots + footer + window_start."""
+) -> Tuple:  # OOB elements (slot OOBs + footer + window_start input + scrollbar)
+    """Build OOB response for navigation: all visible slots + footer + window_start + scrollbar."""
     render_start, render_end = compute_window(
         state.window_start, state.visible_rows, state.total_items
     )
@@ -60,10 +73,16 @@ def build_nav_response(
         for slot_idx, item_idx in enumerate(range(render_start, render_end))
     ]
 
-    return tuple(slot_oobs) + (
+    result = tuple(slot_oobs) + (
         render_footer(state, ids, oob=True),
         _render_window_start_oob(state, ids),
     )
+
+    sb_oob = _render_scrollbar_nav_oob(state, config, ids)
+    if sb_oob is not None:
+        result = result + (sb_oob,)
+
+    return result
 
 # %% ../../nbs/routes/handlers.ipynb #d3rfjri5i06
 def build_cursor_move_response(
@@ -74,7 +93,7 @@ def build_cursor_move_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
+) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input + scrollbar)
     """Build OOB response for cursor-only move: swap just the affected slots."""
     oob_parts = []
 
@@ -97,6 +116,10 @@ def build_cursor_move_response(
 
     oob_parts.append(render_footer(state, ids, oob=True))
     oob_parts.append(_render_window_start_oob(state, ids))
+
+    sb_oob = _render_scrollbar_nav_oob(state, config, ids)
+    if sb_oob is not None:
+        oob_parts.append(sb_oob)
 
     return tuple(oob_parts)
 
