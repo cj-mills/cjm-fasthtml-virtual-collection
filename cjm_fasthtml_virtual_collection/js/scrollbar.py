@@ -15,13 +15,13 @@ from cjm_fasthtml_virtual_scrollbar.js.scrollbar import generate_scrollbar_js as
 # %% ../../nbs/js/scrollbar.ipynb #9c06d0b6
 def generate_scrollbar_js(
     ids: VirtualCollectionHtmlIds,   # HTML IDs for this collection
-    urls: VirtualCollectionUrls,     # URL bundle (for focus_row)
+    urls: VirtualCollectionUrls,     # URL bundle (for scrollbar_focus)
 ) -> str:  # JavaScript code fragment
     """Generate JS for custom scrollbar: drag/click navigates focus position."""
     sb_ids = ScrollbarIds(prefix=ids.prefix)
     return _sb_generate_scrollbar_js(
         ids=sb_ids,
         position_input_id=ids.window_start_input,
-        nav_url=urls.focus_row,
+        nav_url=urls.scrollbar_focus,
         nav_param="row_index",
     )

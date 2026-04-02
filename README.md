@@ -55,39 +55,39 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> core_html_ids
-    components_collection --> core_models
-    components_collection --> components_scrollbar
-    components_collection --> components_table
     components_collection --> components_footer
+    components_collection --> core_models
+    components_collection --> components_table
+    components_collection --> components_scrollbar
+    components_collection --> core_html_ids
     components_footer --> core_html_ids
     components_footer --> core_models
     components_footer --> core_windowing
     components_scrollbar --> core_models
     components_scrollbar --> core_html_ids
-    components_table --> core_html_ids
     components_table --> core_models
+    components_table --> core_html_ids
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
-    js_scrollbar --> core_models
     js_scrollbar --> core_html_ids
-    js_touch --> core_models
+    js_scrollbar --> core_models
     js_touch --> core_html_ids
+    js_touch --> core_models
     js_touch --> core_button_ids
-    keyboard_actions --> core_button_ids
-    keyboard_actions --> core_models
     keyboard_actions --> core_html_ids
-    routes_handlers --> core_windowing
-    routes_handlers --> core_html_ids
-    routes_handlers --> core_models
-    routes_handlers --> components_scrollbar
+    keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
     routes_handlers --> components_footer
+    routes_handlers --> core_models
     routes_handlers --> components_table
-    routes_router --> core_html_ids
-    routes_router --> core_models
+    routes_handlers --> core_windowing
+    routes_handlers --> components_scrollbar
+    routes_handlers --> core_html_ids
     routes_router --> routes_handlers
+    routes_router --> core_models
+    routes_router --> core_html_ids
 ```
 
 *33 cross-module dependencies detected*
@@ -768,6 +768,7 @@ class VirtualCollectionUrls:
     update_viewport: str = ''  # Update visible_rows (auto-fit)
     focus_row: str = ''  # Move cursor to a specific row (click/tap)
     activate: str = ''  # Activate focused row (Space/Enter)
+    scrollbar_focus: str = ''  # Move cursor via scrollbar drag/click (no refocus)
     sort: str = ''  # Sort by column (header click)
 ```
 
@@ -914,7 +915,7 @@ from cjm_fasthtml_virtual_collection.js.scrollbar import (
 ``` python
 def generate_scrollbar_js(
     ids: VirtualCollectionHtmlIds,   # HTML IDs for this collection
-    urls: VirtualCollectionUrls,     # URL bundle (for focus_row)
+    urls: VirtualCollectionUrls,     # URL bundle (for scrollbar_focus)
 ) -> str:  # JavaScript code fragment
     "Generate JS for custom scrollbar: drag/click navigates focus position."
 ```

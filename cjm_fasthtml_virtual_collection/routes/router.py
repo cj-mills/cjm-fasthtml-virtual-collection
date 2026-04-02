@@ -136,6 +136,27 @@ def init_virtual_collection_router(
         return result
 
     # -----------------------------------------------------------------
+    # Scrollbar focus route (no refocus callback)
+    # -----------------------------------------------------------------
+
+    @router
+    def scrollbar_focus(row_index: int) -> Any:
+        """Move cursor via scrollbar drag/click. No refocus — prevents
+        unintentional activation of already-focused rows during drag."""
+        state = state_getter()
+        items = get_items()
+        result = handle_focus_row(
+            row_index=row_index, items=items, state=state,
+            config=config, ids=ids, render_cell=render_cell,
+            focus_url=_get_focus_url(),
+            on_refocus=None,
+            is_skippable=is_skippable,
+            on_cursor_change=on_cursor_change,
+        )
+        state_setter(state)
+        return result
+
+    # -----------------------------------------------------------------
     # Activate route
     # -----------------------------------------------------------------
 
@@ -195,6 +216,7 @@ def init_virtual_collection_router(
         nav_to_index=nav_to_index.to(),
         update_viewport=update_viewport.to(),
         focus_row=_focus_url,
+        scrollbar_focus=scrollbar_focus.to(),
         activate=activate.to(),
         sort=_sort_url,
     )

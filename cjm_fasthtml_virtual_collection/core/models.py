@@ -109,5 +109,8 @@ class VirtualCollectionUrls:
     # Actions
     activate: str = ""                  # Activate focused row (Space/Enter)
 
+    # Scrollbar
+    scrollbar_focus: str = ""           # Move cursor via scrollbar drag/click (no refocus)
+
     # Sort
     sort: str = ""                      # Sort by column (header click)
