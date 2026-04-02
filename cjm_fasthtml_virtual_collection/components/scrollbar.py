@@ -23,16 +23,27 @@ def _map_to_scrollbar(
     config: VirtualCollectionConfig,
     ids: VirtualCollectionHtmlIds,
 ):  # (ScrollbarState, ScrollbarConfig, ScrollbarIds)
-    """Map VC types to scrollbar lib types."""
+    """Map VC types to scrollbar lib types.
+
+    Uses cursor-based model (like card-stack): scrollbar position tracks
+    the focused row, not the viewport window offset. This ensures dragging
+    the thumb to the very top/bottom always reaches the first/last item.
+    Always visible (auto_hide=False) since the scrollbar serves as a
+    position indicator, not just an overflow indicator.
+    """
+    total = state.total_items
     sb_state = ScrollbarState(
-        position=state.window_start,
+        position=state.cursor_index,
         visible_count=state.visible_rows,
-        total_items=state.total_items,
+        total_items=total,
+        max_position=max(0, total - 1),
+        thumb_ratio=1 / total if total > 0 else None,
     )
     sb_config = ScrollbarConfig(
         prefix=config.prefix,
         show_scrollbar=config.show_scrollbar,
         min_thumb_height=config.min_thumb_height,
+        auto_hide=False,
     )
     sb_ids = ScrollbarIds(prefix=ids.prefix)
     return sb_state, sb_config, sb_ids

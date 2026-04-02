@@ -76,11 +76,8 @@ def render_virtual_collection(
         )
 
         if config.show_scrollbar:
-            # Always render scrollbar in DOM — use hidden class when not needed.
-            # OOB handlers rely on the element existing regardless of item count.
+            # Scrollbar always visible — serves as position indicator (cursor-based model)
             scrollbar = render_scrollbar(state, config, ids)
-            if state.total_items <= state.visible_rows:
-                scrollbar.attrs['class'] = scrollbar.attrs.get('class', '') + ' hidden'
             body = Div(wrapper, scrollbar, cls=combine_classes(flex_display, grow(), min_h._0))
         else:
             body = wrapper

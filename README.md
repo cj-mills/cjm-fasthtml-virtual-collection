@@ -55,39 +55,39 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_footer
+    components_collection --> core_html_ids
     components_collection --> core_models
     components_collection --> components_scrollbar
     components_collection --> components_table
-    components_collection --> core_html_ids
-    components_footer --> core_windowing
+    components_collection --> components_footer
     components_footer --> core_html_ids
     components_footer --> core_models
-    components_scrollbar --> core_html_ids
+    components_footer --> core_windowing
     components_scrollbar --> core_models
-    components_table --> core_models
+    components_scrollbar --> core_html_ids
     components_table --> core_html_ids
+    components_table --> core_models
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
     js_scroll --> core_html_ids
     js_scroll --> core_button_ids
-    js_scrollbar --> core_html_ids
     js_scrollbar --> core_models
-    js_touch --> core_html_ids
+    js_scrollbar --> core_html_ids
     js_touch --> core_models
+    js_touch --> core_html_ids
     js_touch --> core_button_ids
-    keyboard_actions --> core_html_ids
-    keyboard_actions --> core_models
     keyboard_actions --> core_button_ids
+    keyboard_actions --> core_models
+    keyboard_actions --> core_html_ids
     routes_handlers --> core_windowing
-    routes_handlers --> components_footer
+    routes_handlers --> core_html_ids
     routes_handlers --> core_models
     routes_handlers --> components_scrollbar
-    routes_handlers --> core_html_ids
+    routes_handlers --> components_footer
     routes_handlers --> components_table
-    routes_router --> routes_handlers
-    routes_router --> core_models
     routes_router --> core_html_ids
+    routes_router --> core_models
+    routes_router --> routes_handlers
 ```
 
 *33 cross-module dependencies detected*
@@ -341,7 +341,7 @@ def _render_scrollbar_nav_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> 'Any':  # Scrollbar element with OOB swap (or None if no scrollbar configured)
-    "Render OOB scrollbar. Hidden via CSS class when items fit in viewport."
+    "Render OOB scrollbar with fresh data attributes."
 ```
 
 ``` python
@@ -438,7 +438,7 @@ def _render_scrollbar_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> Any:  # Scrollbar element with OOB swap (or None if no scrollbar configured)
-    "Render OOB scrollbar. Hidden via CSS class when items fit in viewport."
+    "Render OOB scrollbar with fresh data attributes."
 ```
 
 ``` python
@@ -482,11 +482,15 @@ def handle_focus_row(
     request: Any = None,  # FastHTML request (passed to on_refocus if it accepts it)
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
     """
-    Move cursor to a specific row via click/tap.
+    Move cursor to a specific row via click/tap/scrollbar.
     
-    If the clicked row is skippable, returns empty (no-op).
-    If `on_refocus` is provided and the clicked row is already the cursor,
+    If the clicked row is skippable, finds the nearest focusable row (searching
+    forward first, then backward) and focuses that instead. This ensures scrollbar
+    drag to a skippable region still moves cursor to the closest data row.
+    If `on_refocus` is provided and the target row is already the cursor,
     delegates to `on_refocus` instead of the normal cursor-move logic.
+    When the target row is off-screen (e.g. scrollbar drag to distant row),
+    scrolls the viewport and rebuilds all visible slots.
     """
 ```
 
@@ -861,7 +865,15 @@ def _map_to_scrollbar(
     config: VirtualCollectionConfig,
     ids: VirtualCollectionHtmlIds,
 ):  # (ScrollbarState, ScrollbarConfig, ScrollbarIds)
-    "Map VC types to scrollbar lib types."
+    """
+    Map VC types to scrollbar lib types.
+    
+    Uses cursor-based model (like card-stack): scrollbar position tracks
+    the focused row, not the viewport window offset. This ensures dragging
+    the thumb to the very top/bottom always reaches the first/last item.
+    Always visible (auto_hide=False) since the scrollbar serves as a
+    position indicator, not just an overflow indicator.
+    """
 ```
 
 ``` python
@@ -902,9 +914,9 @@ from cjm_fasthtml_virtual_collection.js.scrollbar import (
 ``` python
 def generate_scrollbar_js(
     ids: VirtualCollectionHtmlIds,   # HTML IDs for this collection
-    urls: VirtualCollectionUrls,     # URL bundle (for nav_to_index)
+    urls: VirtualCollectionUrls,     # URL bundle (for focus_row)
 ) -> str:  # JavaScript code fragment
-    "Generate JS for custom scrollbar: thumb positioning from hidden input + drag/click interaction."
+    "Generate JS for custom scrollbar: drag/click navigates focus position."
 ```
 
 ### components.table (`table.ipynb`)

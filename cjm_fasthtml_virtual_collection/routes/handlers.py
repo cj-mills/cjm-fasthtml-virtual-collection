@@ -44,12 +44,10 @@ def _render_scrollbar_nav_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> 'Any':  # Scrollbar element with OOB swap (or None if no scrollbar configured)
-    """Render OOB scrollbar. Hidden via CSS class when items fit in viewport."""
+    """Render OOB scrollbar with fresh data attributes."""
     if not config.show_scrollbar:
         return None
     sb = render_scrollbar(state, config, ids)
-    if state.total_items <= state.visible_rows:
-        sb.attrs['class'] = sb.attrs.get('class', '') + ' hidden'
     sb.attrs["hx-swap-oob"] = "outerHTML"
     return sb
 
@@ -268,12 +266,10 @@ def _render_scrollbar_oob(
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
 ) -> Any:  # Scrollbar element with OOB swap (or None if no scrollbar configured)
-    """Render OOB scrollbar. Hidden via CSS class when items fit in viewport."""
+    """Render OOB scrollbar with fresh data attributes."""
     if not config.show_scrollbar:
         return None
     sb = render_scrollbar(state, config, ids)
-    if state.total_items <= state.visible_rows:
-        sb.attrs['class'] = sb.attrs.get('class', '') + ' hidden'
     sb.attrs["hx-swap-oob"] = "outerHTML"
     return sb
 
@@ -336,27 +332,54 @@ def handle_focus_row(
     on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
     request: Any = None,  # FastHTML request (passed to on_refocus if it accepts it)
 ) -> Tuple:  # OOB elements (affected slot OOBs + footer + window_start input)
-    """Move cursor to a specific row via click/tap.
+    """Move cursor to a specific row via click/tap/scrollbar.
 
-    If the clicked row is skippable, returns empty (no-op).
-    If `on_refocus` is provided and the clicked row is already the cursor,
+    If the clicked row is skippable, finds the nearest focusable row (searching
+    forward first, then backward) and focuses that instead. This ensures scrollbar
+    drag to a skippable region still moves cursor to the closest data row.
+    If `on_refocus` is provided and the target row is already the cursor,
     delegates to `on_refocus` instead of the normal cursor-move logic.
+    When the target row is off-screen (e.g. scrollbar drag to distant row),
+    scrolls the viewport and rebuilds all visible slots.
     """
     if state.total_items == 0:
         return ()
-    clamped = max(0, min(row_index, state.total_items - 1))
+    original_target = max(0, min(row_index, state.total_items - 1))
+    clamped = original_target
 
-    # Reject focus on skippable items
+    # If target is skippable, find nearest focusable row
     if is_skippable is not None and is_skippable(items[clamped]):
-        return ()
+        _skip_idx = lambda idx: is_skippable(items[idx])
+        clamped = find_nearest_focusable(clamped, state.total_items, _skip_idx, direction=1)
+        if clamped < 0:
+            return ()  # All items skippable
 
-    # Refocus: clicked row is already the cursor
+    # Refocus: target row is already the cursor
     if on_refocus is not None and clamped == state.cursor_index:
         return _call_action_callback(on_refocus, items[clamped], clamped, state, request)
 
     old_cursor = state.cursor_index
+    old_window = state.window_start
     state.cursor_index = clamped
-    result = build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+
+    # Ensure cursor is visible
+    if not _is_cursor_visible(state):
+        _scroll_to_cursor(state)
+
+    # Show context: if original target is above the viewport (e.g. scrollbar
+    # dragged to a skippable header that got snapped forward), adjust window
+    # to include the original target so skippable rows are visible.
+    if original_target < state.window_start:
+        state.window_start = clamp_window_start(
+            original_target, state.visible_rows, state.total_items
+        )
+
+    # Full viewport rebuild if window moved; lightweight swap if only cursor moved
+    if state.window_start != old_window:
+        result = build_nav_response(items, state, config, ids, render_cell, focus_url)
+    else:
+        result = build_cursor_move_response(old_cursor, items, state, config, ids, render_cell, focus_url)
+
     if state.cursor_index != old_cursor:
         result = _append_cursor_change(result, items, state, on_cursor_change)
     return result
@@ -445,11 +468,8 @@ def build_items_changed_response(
     auto-fit re-evaluation after the update — needed when items are added and
     the viewport may have room for more rows than currently rendered.
     """
-    # Capture pre-mutation scrollbar visibility for refit flash prevention
-    _was_scrollbar_hidden = state.total_items <= state.visible_rows
-    
     state.total_items = len(items)
-    
+
     if state.total_items == 0:
         state.window_start = 0
         state.cursor_index = -1
@@ -466,29 +486,12 @@ def build_items_changed_response(
         state.cursor_index = find_nearest_focusable(
             state.cursor_index, state.total_items, _skip_idx, direction=-1,
         )
-    
+
     result = _build_container_response(items, state, config, ids, render_cell, focus_url)
-    
+
     if refit_callback:
         from fasthtml.common import Div, Script
-        
-        # Preserve pre-mutation scrollbar visibility during refit to prevent
-        # flash. Auto-fit will set the correct final state after it settles.
-        # - Was hidden → keep hidden (prevents flash-on during growth cycle)
-        # - Was visible → keep visible (prevents flash-off during add/delete)
-        if config.show_scrollbar and refit_callback:
-            result_list = list(result)
-            for i, el in enumerate(result_list):
-                if hasattr(el, 'attrs') and el.attrs.get('id') == ids.scrollbar_track:
-                    cls = el.attrs.get('class', '')
-                    is_hidden = ' hidden' in cls or cls.endswith('hidden')
-                    if _was_scrollbar_hidden and not is_hidden:
-                        el.attrs['class'] = cls + ' hidden'
-                    elif not _was_scrollbar_hidden and is_hidden:
-                        el.attrs['class'] = cls.replace(' hidden', '')
-                    break
-            result = tuple(result_list)
-        
+
         # OOB-swap the refit trigger div with a script that calls auto-fit.
         # HTMX executes scripts in OOB-swapped content.
         trigger = Div(
@@ -498,5 +501,5 @@ def build_items_changed_response(
         )
         trigger.attrs['hx-swap-oob'] = 'innerHTML'
         result = result + (trigger,)
-    
+
     return result
