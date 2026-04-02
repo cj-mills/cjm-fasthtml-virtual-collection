@@ -4,7 +4,8 @@
 
 # %% auto #0
 __all__ = ['build_nav_response', 'build_cursor_move_response', 'handle_navigate', 'handle_navigate_to_index',
-           'handle_update_viewport', 'handle_focus_row', 'handle_activate', 'handle_sort']
+           'handle_update_viewport', 'handle_focus_row', 'handle_activate', 'handle_sort',
+           'build_items_changed_response']
 
 # %% ../../nbs/routes/handlers.ipynb #6fde5c29
 import inspect
@@ -42,11 +43,13 @@ def _render_scrollbar_nav_oob(
     state: VirtualCollectionState,     # Current state
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
-) -> 'Any':  # Scrollbar element with OOB swap (or None if disabled)
-    """Render OOB scrollbar with fresh data-position for self-contained sync."""
+) -> 'Any':  # Scrollbar element with OOB swap (or None if no scrollbar configured)
+    """Render OOB scrollbar. Hidden via CSS class when items fit in viewport."""
     if not config.show_scrollbar:
         return None
     sb = render_scrollbar(state, config, ids)
+    if state.total_items <= state.visible_rows:
+        sb.attrs['class'] = sb.attrs.get('class', '') + ' hidden'
     sb.attrs["hx-swap-oob"] = "outerHTML"
     return sb
 
@@ -264,9 +267,13 @@ def _render_scrollbar_oob(
     state: VirtualCollectionState,     # Current state
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
-) -> Any:  # Scrollbar element with OOB swap
-    """Render OOB scrollbar with fresh data-total-items and data-visible-count attributes."""
+) -> Any:  # Scrollbar element with OOB swap (or None if no scrollbar configured)
+    """Render OOB scrollbar. Hidden via CSS class when items fit in viewport."""
+    if not config.show_scrollbar:
+        return None
     sb = render_scrollbar(state, config, ids)
+    if state.total_items <= state.visible_rows:
+        sb.attrs['class'] = sb.attrs.get('class', '') + ' hidden'
     sb.attrs["hx-swap-oob"] = "outerHTML"
     return sb
 
@@ -278,16 +285,19 @@ def _build_container_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start input)
+) -> Tuple:  # OOB elements (container + footer + window_start input [+ scrollbar])
     """Build OOB response that replaces the entire rows container with new slots."""
     rows_oob = render_table_rows(items, config, state, ids, render_cell, focus_url=focus_url)
     rows_oob.attrs["hx-swap-oob"] = "outerHTML"
-    return (
+    result = (
         rows_oob,
-        _render_scrollbar_oob(state, config, ids),
         render_footer(state, ids, oob=True),
         _render_window_start_oob(state, ids),
     )
+    sb_oob = _render_scrollbar_oob(state, config, ids)
+    if sb_oob is not None:
+        result = result + (sb_oob,)
+    return result
 
 
 def handle_update_viewport(
@@ -412,4 +422,81 @@ def handle_sort(
     result = (header_oob,) + nav_response
     if state.cursor_index != old_cursor:
         result = _append_cursor_change(result, items, state, on_cursor_change)
+    return result
+
+# %% ../../nbs/routes/handlers.ipynb #b4t4pmhyka
+def build_items_changed_response(
+    items:list,  # Full item list (already mutated by consumer)
+    state:VirtualCollectionState,  # Current state (mutated in place)
+    config:VirtualCollectionConfig,  # Collection config
+    ids:VirtualCollectionHtmlIds,  # HTML IDs
+    render_cell:Callable,  # Consumer cell render callback
+    focus_url:str="",  # URL for click-to-focus
+    is_skippable:Optional[Callable[[Any], bool]]=None,  # Predicate: item -> skip?
+    refit_callback:str="",  # JS auto-fit call expression (from auto_fit_callback_name)
+) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start [+ refit trigger])
+    """Rebuild the VC after the consumer modifies the item list externally.
+
+    Updates total_items, clamps window_start and cursor_index, then replaces
+    the entire rows container via OOB. Use this after deleting, adding, or
+    filtering items — any operation that changes the item count.
+
+    Pass `refit_callback` (from `auto_fit_callback_name(config)`) to trigger
+    auto-fit re-evaluation after the update — needed when items are added and
+    the viewport may have room for more rows than currently rendered.
+    """
+    # Capture pre-mutation scrollbar visibility for refit flash prevention
+    _was_scrollbar_hidden = state.total_items <= state.visible_rows
+    
+    state.total_items = len(items)
+    
+    if state.total_items == 0:
+        state.window_start = 0
+        state.cursor_index = -1
+    else:
+        state.window_start = clamp_window_start(
+            state.window_start, state.visible_rows, state.total_items,
+        )
+        # Clamp cursor to valid range, then find nearest focusable
+        _skip_idx = (lambda idx: is_skippable(items[idx])) if is_skippable else None
+        if state.cursor_index >= state.total_items:
+            state.cursor_index = state.total_items - 1
+        if state.cursor_index < 0:
+            state.cursor_index = 0
+        state.cursor_index = find_nearest_focusable(
+            state.cursor_index, state.total_items, _skip_idx, direction=-1,
+        )
+    
+    result = _build_container_response(items, state, config, ids, render_cell, focus_url)
+    
+    if refit_callback:
+        from fasthtml.common import Div, Script
+        
+        # Preserve pre-mutation scrollbar visibility during refit to prevent
+        # flash. Auto-fit will set the correct final state after it settles.
+        # - Was hidden → keep hidden (prevents flash-on during growth cycle)
+        # - Was visible → keep visible (prevents flash-off during add/delete)
+        if config.show_scrollbar and refit_callback:
+            result_list = list(result)
+            for i, el in enumerate(result_list):
+                if hasattr(el, 'attrs') and el.attrs.get('id') == ids.scrollbar_track:
+                    cls = el.attrs.get('class', '')
+                    is_hidden = ' hidden' in cls or cls.endswith('hidden')
+                    if _was_scrollbar_hidden and not is_hidden:
+                        el.attrs['class'] = cls + ' hidden'
+                    elif not _was_scrollbar_hidden and is_hidden:
+                        el.attrs['class'] = cls.replace(' hidden', '')
+                    break
+            result = tuple(result_list)
+        
+        # OOB-swap the refit trigger div with a script that calls auto-fit.
+        # HTMX executes scripts in OOB-swapped content.
+        trigger = Div(
+            Script(f"setTimeout(() => {{ {refit_callback}; }}, 0);"),
+            id=ids.refit_trigger,
+            style="display:none",
+        )
+        trigger.attrs['hx-swap-oob'] = 'innerHTML'
+        result = result + (trigger,)
+    
     return result

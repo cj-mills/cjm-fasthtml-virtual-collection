@@ -97,6 +97,7 @@ def main():
 
     import demos.constrained_container as cc_demo
     import demos.skippable as sk_demo
+    import demos.delete_items as del_demo
 
     print("\n" + "=" * 70)
     print("Initializing cjm-fasthtml-virtual-collection Demo")
@@ -303,6 +304,9 @@ def main():
     sk = sk_demo.setup()
     print(f"  Skippable items demo: {sk['title']}")
 
+    dl = del_demo.setup()
+    print(f"  Delete items demo: {dl['title']}")
+
     # -------------------------------------------------------------------------
     # Page routes
     # -------------------------------------------------------------------------
@@ -408,6 +412,14 @@ def main():
             wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
         )
 
+    @router
+    def demo_delete(request):
+        """Delete items demo page."""
+        return handle_htmx_request(
+            request, dl['page_content'],
+            wrap_fn=lambda content: wrap_with_layout(content, navbar=navbar)
+        )
+
     # -------------------------------------------------------------------------
     # Navbar and route registration
     # -------------------------------------------------------------------------
@@ -419,12 +431,13 @@ def main():
             ("Table", demo_table),
             ("Constrained", demo_constrained),
             ("Skippable", demo_skippable),
+            ("Delete", demo_delete),
         ],
         home_route=index,
         theme_selector=True
     )
 
-    register_routes(app, router, vc_router, cc['router'], sk['router'])
+    register_routes(app, router, vc_router, cc['router'], sk['router'], dl['router'], dl['vc_router'])
 
     # Debug output
     print("\n" + "=" * 70)
@@ -456,6 +469,7 @@ if __name__ == "__main__":
     print(f"  http://{display_host}:{port}/demo_table    — Table demo")
     print(f"  http://{display_host}:{port}/demo_constrained — Constrained container demo")
     print(f"  http://{display_host}:{port}/demo_skippable — Skippable items demo")
+    print(f"  http://{display_host}:{port}/demo_delete   — Delete items demo")
     print()
 
     timer = threading.Timer(1.5, lambda: webbrowser.open(f"http://localhost:{port}"))

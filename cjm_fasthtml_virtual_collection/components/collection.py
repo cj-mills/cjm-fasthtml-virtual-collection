@@ -75,8 +75,12 @@ def render_virtual_collection(
             cls=combine_classes(flex(1), min_h._0, overflow.y.hidden, touch.pan_x),
         )
 
-        if config.show_scrollbar and state.total_items > state.visible_rows:
+        if config.show_scrollbar:
+            # Always render scrollbar in DOM — use hidden class when not needed.
+            # OOB handlers rely on the element existing regardless of item count.
             scrollbar = render_scrollbar(state, config, ids)
+            if state.total_items <= state.visible_rows:
+                scrollbar.attrs['class'] = scrollbar.attrs.get('class', '') + ' hidden'
             body = Div(wrapper, scrollbar, cls=combine_classes(flex_display, grow(), min_h._0))
         else:
             body = wrapper
@@ -97,6 +101,9 @@ def render_virtual_collection(
         id=ids.window_start_input,
         name="window_start",
     ))
+
+    # Refit trigger — empty div for OOB-swapping auto-fit scripts after item mutations
+    children.append(Div(id=ids.refit_trigger, style="display:none"))
 
     # grow + min-h-0: fill flex parent without exceeding it
     return Div(

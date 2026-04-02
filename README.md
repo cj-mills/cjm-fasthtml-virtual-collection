@@ -56,35 +56,35 @@ graph LR
     routes_router[routes.router<br/>routes.router]
 
     components_collection --> components_footer
+    components_collection --> core_models
     components_collection --> components_scrollbar
     components_collection --> components_table
-    components_collection --> core_models
     components_collection --> core_html_ids
     components_footer --> core_windowing
-    components_footer --> core_models
     components_footer --> core_html_ids
-    components_scrollbar --> core_models
+    components_footer --> core_models
     components_scrollbar --> core_html_ids
+    components_scrollbar --> core_models
     components_table --> core_models
     components_table --> core_html_ids
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
-    js_scroll --> core_button_ids
     js_scroll --> core_html_ids
-    js_scrollbar --> core_models
+    js_scroll --> core_button_ids
     js_scrollbar --> core_html_ids
+    js_scrollbar --> core_models
+    js_touch --> core_html_ids
     js_touch --> core_models
     js_touch --> core_button_ids
-    js_touch --> core_html_ids
-    keyboard_actions --> core_models
     keyboard_actions --> core_html_ids
+    keyboard_actions --> core_models
     keyboard_actions --> core_button_ids
     routes_handlers --> core_windowing
     routes_handlers --> components_footer
-    routes_handlers --> components_scrollbar
     routes_handlers --> core_models
-    routes_handlers --> components_table
+    routes_handlers --> components_scrollbar
     routes_handlers --> core_html_ids
+    routes_handlers --> components_table
     routes_router --> routes_handlers
     routes_router --> core_models
     routes_router --> core_html_ids
@@ -177,7 +177,7 @@ def generate_auto_fit_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     config: VirtualCollectionConfig,      # Collection config
     urls: VirtualCollectionUrls,          # URL bundle (for update_viewport)
-    total_items: int = 0,                 # Total item count
+    total_items: int = 0,                 # Initial total item count (fallback)
     initial_visible: int = 1,             # Initial visible row count
 ) -> str:  # JavaScript code fragment
     """
@@ -186,6 +186,9 @@ def generate_auto_fit_js(
     Measures actual table overflow against wrapper height. Grows incrementally
     with opacity:0 validation, shrinks via batch estimation. Adapted from the
     cjm-fasthtml-card-stack auto_adjust pattern.
+    
+    total_items is read dynamically from the scrollbar's data-total-items
+    attribute so that add/delete operations are reflected without regenerating JS.
     """
 ```
 
@@ -317,7 +320,8 @@ from cjm_fasthtml_virtual_collection.routes.handlers import (
     handle_update_viewport,
     handle_focus_row,
     handle_activate,
-    handle_sort
+    handle_sort,
+    build_items_changed_response
 )
 ```
 
@@ -336,8 +340,8 @@ def _render_scrollbar_nav_oob(
     state: VirtualCollectionState,     # Current state
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
-) -> 'Any':  # Scrollbar element with OOB swap (or None if disabled)
-    "Render OOB scrollbar with fresh data-position for self-contained sync."
+) -> 'Any':  # Scrollbar element with OOB swap (or None if no scrollbar configured)
+    "Render OOB scrollbar. Hidden via CSS class when items fit in viewport."
 ```
 
 ``` python
@@ -433,8 +437,8 @@ def _render_scrollbar_oob(
     state: VirtualCollectionState,     # Current state
     config: VirtualCollectionConfig,   # Collection config
     ids: VirtualCollectionHtmlIds,     # HTML IDs
-) -> Any:  # Scrollbar element with OOB swap
-    "Render OOB scrollbar with fresh data-total-items and data-visible-count attributes."
+) -> Any:  # Scrollbar element with OOB swap (or None if no scrollbar configured)
+    "Render OOB scrollbar. Hidden via CSS class when items fit in viewport."
 ```
 
 ``` python
@@ -445,7 +449,7 @@ def _build_container_response(
     ids: VirtualCollectionHtmlIds,          # HTML IDs
     render_cell: Callable,                  # Consumer cell render callback
     focus_url: str = "",                    # URL for click-to-focus
-) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start input)
+) -> Tuple:  # OOB elements (container + footer + window_start input [+ scrollbar])
     "Build OOB response that replaces the entire rows container with new slots."
 ```
 
@@ -515,6 +519,30 @@ def handle_sort(
     on_cursor_change: Optional[Callable] = None,  # Callback: (item, cursor_index, state) -> Tuple
 ) -> Tuple:  # OOB elements (header + rows + footer + window_start)
     "Sort by column. Toggles direction if same column, resets window to start."
+```
+
+``` python
+def build_items_changed_response(
+    items:list,  # Full item list (already mutated by consumer)
+    state:VirtualCollectionState,  # Current state (mutated in place)
+    config:VirtualCollectionConfig,  # Collection config
+    ids:VirtualCollectionHtmlIds,  # HTML IDs
+    render_cell:Callable,  # Consumer cell render callback
+    focus_url:str="",  # URL for click-to-focus
+    is_skippable:Optional[Callable[[Any], bool]]=None,  # Predicate: item -> skip?
+    refit_callback:str="",  # JS auto-fit call expression (from auto_fit_callback_name)
+) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start [+ refit trigger])
+    """
+    Rebuild the VC after the consumer modifies the item list externally.
+    
+    Updates total_items, clamps window_start and cursor_index, then replaces
+    the entire rows container via OOB. Use this after deleting, adding, or
+    filtering items — any operation that changes the item count.
+    
+    Pass `refit_callback` (from `auto_fit_callback_name(config)`) to trigger
+    auto-fit re-evaluation after the update — needed when items are added and
+    the viewport may have room for more rows than currently rendered.
+    """
 ```
 
 ### core.html_ids (`html_ids.ipynb`)
@@ -620,6 +648,12 @@ class VirtualCollectionHtmlIds:
         def window_start_input(self) -> str: return f"{self.prefix}-window-start-input"
     
     def window_start_input(self) -> str: return f"{self.prefix}-window-start-input"
+    
+        # -- Refit trigger (OOB target for auto-fit re-evaluation after item mutations) --
+        @property
+        def refit_trigger(self) -> str: return f"{self.prefix}-refit-trigger"
+    
+    def refit_trigger(self) -> str: return f"{self.prefix}-refit-trigger"
 ```
 
 ### core.models (`models.ipynb`)

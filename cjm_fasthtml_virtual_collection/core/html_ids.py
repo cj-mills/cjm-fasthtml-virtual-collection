@@ -70,3 +70,7 @@ class VirtualCollectionHtmlIds:
     # -- Hidden inputs --
     @property
     def window_start_input(self) -> str: return f"{self.prefix}-window-start-input"
+
+    # -- Refit trigger (OOB target for auto-fit re-evaluation after item mutations) --
+    @property
+    def refit_trigger(self) -> str: return f"{self.prefix}-refit-trigger"

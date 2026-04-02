@@ -16,7 +16,7 @@ def generate_auto_fit_js(
     ids: VirtualCollectionHtmlIds,       # HTML IDs for this collection
     config: VirtualCollectionConfig,      # Collection config
     urls: VirtualCollectionUrls,          # URL bundle (for update_viewport)
-    total_items: int = 0,                 # Total item count
+    total_items: int = 0,                 # Initial total item count (fallback)
     initial_visible: int = 1,             # Initial visible row count
 ) -> str:  # JavaScript code fragment
     """Generate JS for overflow-based auto-fit of visible row count.
@@ -24,6 +24,9 @@ def generate_auto_fit_js(
     Measures actual table overflow against wrapper height. Grows incrementally
     with opacity:0 validation, shrinks via batch estimation. Adapted from the
     cjm-fasthtml-card-stack auto_adjust pattern.
+
+    total_items is read dynamically from the scrollbar's data-total-items
+    attribute so that add/delete operations are reflected without regenerating JS.
     """
     return f"""
         // === Auto-Fit Visible Rows (Overflow-Based) ===
@@ -31,8 +34,9 @@ def generate_auto_fit_js(
             const wrapperId = '{ids.wrapper}';
             const tableId = '{ids.table}';
             const bodyId = '{ids.rows}';
+            const scrollbarId = '{ids.scrollbar_track}';
             const updateUrl = '{urls.update_viewport}';
-            const totalItems = {total_items};
+            const _fallbackTotal = {total_items};
             const GROW_STEP = 1;
 
             let _visibleRows = {initial_visible};
@@ -44,6 +48,15 @@ def generate_auto_fit_js(
             let _reverting = false;
             let _preGrowthCount = 0;
             let _preGrowthSlotIds = null;
+
+            function _getTotalItems() {{
+                const sb = document.getElementById(scrollbarId);
+                if (sb) {{
+                    const val = parseInt(sb.getAttribute('data-total-items'));
+                    if (!isNaN(val)) return val;
+                }}
+                return _fallbackTotal;
+            }}
 
             function _getWrapperHeight() {{
                 const el = document.getElementById(wrapperId);
@@ -128,6 +141,7 @@ def generate_auto_fit_js(
                     return;
                 }}
 
+                const totalItems = _getTotalItems();
                 const overflow = _getOverflow();
                 const wrapperH = _getWrapperHeight();
                 if (wrapperH === 0) return;
