@@ -1,0 +1,1761 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.37">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table layout, and cell-level HTMX updates.">
+
+<title>cjm-fasthtml-virtual-collection</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-7f8f88aac4f3542376d5c11b86a4c14d.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-de52dc3353fe04aa4d07820b7139bd46.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="cjm-fasthtml-virtual-collection">
+<meta property="og:description" content="FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table layout, and cell-level HTMX updates.">
+<meta property="og:site_name" content="cjm-fasthtml-virtual-collection">
+<meta name="twitter:title" content="cjm-fasthtml-virtual-collection">
+<meta name="twitter:description" content="FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table layout, and cell-level HTMX updates.">
+<meta name="twitter:card" content="summary">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">cjm-fasthtml-virtual-collection</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./index.html">cjm-fasthtml-virtual-collection</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">cjm-fasthtml-virtual-collection</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">components</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./components/collection.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">components.collection</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./components/footer.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">components.footer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./components/scrollbar.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">components.scrollbar</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./components/table.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">components.table</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true">
+ <span class="menu-text">core</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-2" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-2" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core/button_ids.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">core.button_ids</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core/html_ids.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">core.html_ids</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core/models.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">core.models</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./core/windowing.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">core.windowing</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true">
+ <span class="menu-text">js</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-3" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-3" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./js/auto_fit.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">js.auto_fit</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./js/scroll.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">js.scroll</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./js/scrollbar.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">js.scrollbar</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./js/touch.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">js.touch</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true">
+ <span class="menu-text">keyboard</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-4" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-4" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./keyboard/actions.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">keyboard.actions</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true">
+ <span class="menu-text">routes</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-5" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-5" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./routes/handlers.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">routes.handlers</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./routes/router.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">routes.router</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#install" id="toc-install" class="nav-link active" data-scroll-target="#install">Install</a></li>
+  <li><a href="#project-structure" id="toc-project-structure" class="nav-link" data-scroll-target="#project-structure">Project Structure</a></li>
+  <li><a href="#module-dependencies" id="toc-module-dependencies" class="nav-link" data-scroll-target="#module-dependencies">Module Dependencies</a></li>
+  <li><a href="#cli-reference" id="toc-cli-reference" class="nav-link" data-scroll-target="#cli-reference">CLI Reference</a></li>
+  <li><a href="#module-overview" id="toc-module-overview" class="nav-link" data-scroll-target="#module-overview">Module Overview</a>
+  <ul class="collapse">
+  <li><a href="#keyboard.actions-actions.ipynb" id="toc-keyboard.actions-actions.ipynb" class="nav-link" data-scroll-target="#keyboard.actions-actions.ipynb">keyboard.actions (<code>actions.ipynb</code>)</a></li>
+  <li><a href="#js.auto_fit-auto_fit.ipynb" id="toc-js.auto_fit-auto_fit.ipynb" class="nav-link" data-scroll-target="#js.auto_fit-auto_fit.ipynb">js.auto_fit (<code>auto_fit.ipynb</code>)</a></li>
+  <li><a href="#core.button_ids-button_ids.ipynb" id="toc-core.button_ids-button_ids.ipynb" class="nav-link" data-scroll-target="#core.button_ids-button_ids.ipynb">core.button_ids (<code>button_ids.ipynb</code>)</a></li>
+  <li><a href="#components.collection-collection.ipynb" id="toc-components.collection-collection.ipynb" class="nav-link" data-scroll-target="#components.collection-collection.ipynb">components.collection (<code>collection.ipynb</code>)</a></li>
+  <li><a href="#components.footer-footer.ipynb" id="toc-components.footer-footer.ipynb" class="nav-link" data-scroll-target="#components.footer-footer.ipynb">components.footer (<code>footer.ipynb</code>)</a></li>
+  <li><a href="#routes.handlers-handlers.ipynb" id="toc-routes.handlers-handlers.ipynb" class="nav-link" data-scroll-target="#routes.handlers-handlers.ipynb">routes.handlers (<code>handlers.ipynb</code>)</a></li>
+  <li><a href="#core.html_ids-html_ids.ipynb" id="toc-core.html_ids-html_ids.ipynb" class="nav-link" data-scroll-target="#core.html_ids-html_ids.ipynb">core.html_ids (<code>html_ids.ipynb</code>)</a></li>
+  <li><a href="#core.models-models.ipynb" id="toc-core.models-models.ipynb" class="nav-link" data-scroll-target="#core.models-models.ipynb">core.models (<code>models.ipynb</code>)</a></li>
+  <li><a href="#routes.router-router.ipynb" id="toc-routes.router-router.ipynb" class="nav-link" data-scroll-target="#routes.router-router.ipynb">routes.router (<code>router.ipynb</code>)</a></li>
+  <li><a href="#js.scroll-scroll.ipynb" id="toc-js.scroll-scroll.ipynb" class="nav-link" data-scroll-target="#js.scroll-scroll.ipynb">js.scroll (<code>scroll.ipynb</code>)</a></li>
+  <li><a href="#components.scrollbar-scrollbar.ipynb" id="toc-components.scrollbar-scrollbar.ipynb" class="nav-link" data-scroll-target="#components.scrollbar-scrollbar.ipynb">components.scrollbar (<code>scrollbar.ipynb</code>)</a></li>
+  <li><a href="#js.scrollbar-scrollbar.ipynb" id="toc-js.scrollbar-scrollbar.ipynb" class="nav-link" data-scroll-target="#js.scrollbar-scrollbar.ipynb">js.scrollbar (<code>scrollbar.ipynb</code>)</a></li>
+  <li><a href="#components.table-table.ipynb" id="toc-components.table-table.ipynb" class="nav-link" data-scroll-target="#components.table-table.ipynb">components.table (<code>table.ipynb</code>)</a></li>
+  <li><a href="#js.touch-touch.ipynb" id="toc-js.touch-touch.ipynb" class="nav-link" data-scroll-target="#js.touch-touch.ipynb">js.touch (<code>touch.ipynb</code>)</a></li>
+  <li><a href="#core.windowing-windowing.ipynb" id="toc-core.windowing-windowing.ipynb" class="nav-link" data-scroll-target="#core.windowing-windowing.ipynb">core.windowing (<code>windowing.ipynb</code>)</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/cj-mills/cjm-fasthtml-virtual-collection/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div><div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="index.html.md"><i class="bi bi-file-code"></i>CommonMark</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">cjm-fasthtml-virtual-collection</h1>
+</div>
+
+<div>
+  <div class="description">
+    FastHTML virtualized collection rendering with discrete navigation, custom scrollbar, table layout, and cell-level HTMX updates.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<section id="install" class="level2">
+<h2 class="anchored" data-anchor-id="install">Install</h2>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode bash code-with-copy"><code class="sourceCode bash"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="ex">pip</span> install cjm_fasthtml_virtual_collection</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="project-structure" class="level2">
+<h2 class="anchored" data-anchor-id="project-structure">Project Structure</h2>
+<pre><code>nbs/
+├── components/ (4)
+│   ├── collection.ipynb  # Main entry point for rendering a virtual collection.
+│   ├── footer.ipynb      # Footer component showing item range indicator.
+│   ├── scrollbar.ipynb   # Custom scrollbar component with proportional thumb for position indication.
+│   └── table.ipynb       # Table layout rendering: header row, data rows, and cells using CSS table display.
+├── core/ (4)
+│   ├── button_ids.ipynb  # Hidden button ID generators for navigation triggers.
+│   ├── html_ids.ipynb    # HTML element ID generators for virtual collection components.
+│   ├── models.ipynb      # Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.
+│   └── windowing.ipynb   # Pure math functions for viewport window calculations and navigation.
+├── js/ (4)
+│   ├── auto_fit.ipynb   # JavaScript generator for overflow-based automatic visible row count adjustment.
+│   ├── scroll.ipynb     # JavaScript generator for scroll wheel to navigation conversion.
+│   ├── scrollbar.ipynb  # JavaScript generator for custom scrollbar interaction (drag thumb, click track).
+│   └── touch.ipynb      # JavaScript generator for touch/swipe to navigation conversion.
+├── keyboard/ (1)
+│   └── actions.ipynb  # Keyboard navigation focus zone and action factories for the virtual collection.
+└── routes/ (2)
+    ├── handlers.ipynb  # Response builder functions for virtual collection navigation (Tier 1 API).
+    └── router.ipynb    # Convenience router factory that wires up standard virtual collection routes (Tier 2 API).</code></pre>
+<p>Total: 15 notebooks across 5 directories</p>
+</section>
+<section id="module-dependencies" class="level2">
+<h2 class="anchored" data-anchor-id="module-dependencies">Module Dependencies</h2>
+<pre class="mermaid"><code>graph LR
+    components_collection[components.collection&lt;br/&gt;components.collection]
+    components_footer[components.footer&lt;br/&gt;components.footer]
+    components_scrollbar[components.scrollbar&lt;br/&gt;components.scrollbar]
+    components_table[components.table&lt;br/&gt;components.table]
+    core_button_ids[core.button_ids&lt;br/&gt;core.button_ids]
+    core_html_ids[core.html_ids&lt;br/&gt;core.html_ids]
+    core_models[core.models&lt;br/&gt;core.models]
+    core_windowing[core.windowing&lt;br/&gt;core.windowing]
+    js_auto_fit[js.auto_fit&lt;br/&gt;js.auto_fit]
+    js_scroll[js.scroll&lt;br/&gt;js.scroll]
+    js_scrollbar[js.scrollbar&lt;br/&gt;js.scrollbar]
+    js_touch[js.touch&lt;br/&gt;js.touch]
+    keyboard_actions[keyboard.actions&lt;br/&gt;keyboard.actions]
+    routes_handlers[routes.handlers&lt;br/&gt;routes.handlers]
+    routes_router[routes.router&lt;br/&gt;routes.router]
+
+    components_collection --&gt; components_footer
+    components_collection --&gt; core_models
+    components_collection --&gt; components_table
+    components_collection --&gt; components_scrollbar
+    components_collection --&gt; core_html_ids
+    components_footer --&gt; core_html_ids
+    components_footer --&gt; core_models
+    components_footer --&gt; core_windowing
+    components_scrollbar --&gt; core_models
+    components_scrollbar --&gt; core_html_ids
+    components_table --&gt; core_models
+    components_table --&gt; core_html_ids
+    js_auto_fit --&gt; core_models
+    js_auto_fit --&gt; core_html_ids
+    js_scroll --&gt; core_html_ids
+    js_scroll --&gt; core_button_ids
+    js_scrollbar --&gt; core_html_ids
+    js_scrollbar --&gt; core_models
+    js_touch --&gt; core_html_ids
+    js_touch --&gt; core_models
+    js_touch --&gt; core_button_ids
+    keyboard_actions --&gt; core_html_ids
+    keyboard_actions --&gt; core_models
+    keyboard_actions --&gt; core_button_ids
+    routes_handlers --&gt; components_footer
+    routes_handlers --&gt; core_models
+    routes_handlers --&gt; components_table
+    routes_handlers --&gt; core_windowing
+    routes_handlers --&gt; components_scrollbar
+    routes_handlers --&gt; core_html_ids
+    routes_router --&gt; routes_handlers
+    routes_router --&gt; core_models
+    routes_router --&gt; core_html_ids</code></pre>
+<p><em>33 cross-module dependencies detected</em></p>
+</section>
+<section id="cli-reference" class="level2">
+<h2 class="anchored" data-anchor-id="cli-reference">CLI Reference</h2>
+<p>No CLI commands found in this project.</p>
+</section>
+<section id="module-overview" class="level2">
+<h2 class="anchored" data-anchor-id="module-overview">Module Overview</h2>
+<p>Detailed documentation for each module in the project:</p>
+<section id="keyboard.actions-actions.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="keyboard.actions-actions.ipynb">keyboard.actions (<code>actions.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Keyboard navigation focus zone and action factories for the virtual collection.</p>
+</blockquote>
+<section id="import" class="level4">
+<h4 class="anchored" data-anchor-id="import">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.keyboard.actions <span class="im">import</span> (</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    create_collection_focus_zone,</span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    create_collection_nav_actions,</span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>    build_collection_url_map,</span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>    apply_nav_sync</span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions" class="level4">
+<h4 class="anchored" data-anchor-id="functions">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_collection_focus_zone(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,  <span class="co"># HTML IDs for this collection instance</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    hidden_input_prefix: Optional[<span class="bu">str</span>] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Prefix for keyboard nav hidden inputs</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> FocusZone:  <span class="co"># Configured focus zone for the collection</span></span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Create a focus zone for a virtual collection viewport."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> create_collection_nav_actions(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    zone_id: <span class="bu">str</span>,  <span class="co"># Focus zone ID to restrict actions to</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    button_ids: VirtualCollectionButtonIds,  <span class="co"># Button IDs for HTMX triggers</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>    disable_in_modes: Tuple[<span class="bu">str</span>, ...] <span class="op">=</span> (),  <span class="co"># Mode names that disable navigation</span></span>
+<span id="cb6-5"><a href="#cb6-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple[KeyAction, ...]:  <span class="co"># Standard collection navigation actions</span></span>
+<span id="cb6-6"><a href="#cb6-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Create standard keyboard navigation actions for a virtual collection."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_collection_url_map(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    button_ids: VirtualCollectionButtonIds,  <span class="co"># Button IDs for this collection</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>    urls: VirtualCollectionUrls,  <span class="co"># URL bundle for routing</span></span>
+<span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Dict[<span class="bu">str</span>, <span class="bu">str</span>]:  <span class="co"># Mapping of button ID -&gt; route URL</span></span>
+<span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Build url_map for render_keyboard_system with all collection buttons."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> apply_nav_sync(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    kb_system: KeyboardSystem,         <span class="co"># Rendered keyboard system to patch</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs for this collection</span></span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span>:  <span class="co"># Modifies kb_system.action_buttons in place</span></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb8-6"><a href="#cb8-6" aria-hidden="true" tabindex="-1"></a><span class="co">    Add hx-sync to nav buttons so rapid input aborts stale in-flight requests.</span></span>
+<span id="cb8-7"><a href="#cb8-7" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb8-8"><a href="#cb8-8" aria-hidden="true" tabindex="-1"></a><span class="co">    Prevents race conditions between cursor-only and full-window OOB responses</span></span>
+<span id="cb8-9"><a href="#cb8-9" aria-hidden="true" tabindex="-1"></a><span class="co">    during rapid keyboard or scroll wheel navigation.</span></span>
+<span id="cb8-10"><a href="#cb8-10" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="js.auto_fit-auto_fit.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="js.auto_fit-auto_fit.ipynb">js.auto_fit (<code>auto_fit.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>JavaScript generator for overflow-based automatic visible row count adjustment.</p>
+</blockquote>
+<section id="import-1" class="level4">
+<h4 class="anchored" data-anchor-id="import-1">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.js.auto_fit <span class="im">import</span> (</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    generate_auto_fit_js,</span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>    auto_fit_callback_name</span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-1" class="level4">
+<h4 class="anchored" data-anchor-id="functions-1">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_auto_fit_js(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,       <span class="co"># HTML IDs for this collection</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,      <span class="co"># Collection config</span></span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>    urls: VirtualCollectionUrls,          <span class="co"># URL bundle (for update_viewport)</span></span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>,                 <span class="co"># Initial total item count (fallback)</span></span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>    initial_visible: <span class="bu">int</span> <span class="op">=</span> <span class="dv">1</span>,             <span class="co"># Initial visible row count</span></span>
+<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># JavaScript code fragment</span></span>
+<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Generate JS for overflow-based auto-fit of visible row count.</span></span>
+<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a><span class="co">    Measures actual table overflow against wrapper height. Grows incrementally</span></span>
+<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a><span class="co">    with opacity:0 validation, shrinks via batch estimation. Adapted from the</span></span>
+<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a><span class="co">    cjm-fasthtml-card-stack auto_adjust pattern.</span></span>
+<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">    total_items is read dynamically from the scrollbar's data-total-items</span></span>
+<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">    attribute so that add/delete operations are reflected without regenerating JS.</span></span>
+<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> auto_fit_callback_name(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,  <span class="co"># Collection config (for prefix)</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># Global JS function name</span></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Get the global callback name for viewport-fit's resize_callback."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="core.button_ids-button_ids.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="core.button_ids-button_ids.ipynb">core.button_ids (<code>button_ids.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Hidden button ID generators for navigation triggers.</p>
+</blockquote>
+<section id="import-2" class="level4">
+<h4 class="anchored" data-anchor-id="import-2">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.core.button_ids <span class="im">import</span> (</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    VirtualCollectionButtonIds</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="classes" class="level4">
+<h4 class="anchored" data-anchor-id="classes">Classes</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VirtualCollectionButtonIds:</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Hidden button IDs for keyboard/scroll navigation triggers."</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>    prefix: <span class="bu">str</span>  <span class="co"># Instance prefix (e.g., 'vc0', 'fb')</span></span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-7"><a href="#cb13-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_up(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-up"</span></span>
+<span id="cb13-8"><a href="#cb13-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-9"><a href="#cb13-9" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-10"><a href="#cb13-10" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> nav_down(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-down"</span></span>
+<span id="cb13-11"><a href="#cb13-11" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-12"><a href="#cb13-12" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_down(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-down"</span></span>
+<span id="cb13-13"><a href="#cb13-13" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-14"><a href="#cb13-14" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-15"><a href="#cb13-15" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> nav_page_up(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-page-up"</span></span>
+<span id="cb13-16"><a href="#cb13-16" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-17"><a href="#cb13-17" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_page_up(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-page-up"</span></span>
+<span id="cb13-18"><a href="#cb13-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-19"><a href="#cb13-19" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-20"><a href="#cb13-20" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> nav_page_down(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-page-down"</span></span>
+<span id="cb13-21"><a href="#cb13-21" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-22"><a href="#cb13-22" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_page_down(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-page-down"</span></span>
+<span id="cb13-23"><a href="#cb13-23" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-24"><a href="#cb13-24" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-25"><a href="#cb13-25" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> nav_first(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-first"</span></span>
+<span id="cb13-26"><a href="#cb13-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-27"><a href="#cb13-27" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_first(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-first"</span></span>
+<span id="cb13-28"><a href="#cb13-28" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-29"><a href="#cb13-29" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-30"><a href="#cb13-30" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> nav_last(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-last"</span></span>
+<span id="cb13-31"><a href="#cb13-31" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-32"><a href="#cb13-32" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> nav_last(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-nav-last"</span></span>
+<span id="cb13-33"><a href="#cb13-33" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-34"><a href="#cb13-34" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Action buttons --</span></span>
+<span id="cb13-35"><a href="#cb13-35" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb13-36"><a href="#cb13-36" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> activate(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-activate"</span></span>
+<span id="cb13-37"><a href="#cb13-37" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb13-38"><a href="#cb13-38" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> activate(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-btn-activate"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="components.collection-collection.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="components.collection-collection.ipynb">components.collection (<code>collection.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Main entry point for rendering a virtual collection.</p>
+</blockquote>
+<section id="import-3" class="level4">
+<h4 class="anchored" data-anchor-id="import-3">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.components.collection <span class="im">import</span> (</span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>    render_virtual_collection</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-2" class="level4">
+<h4 class="anchored" data-anchor-id="functions-2">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_virtual_collection(</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                                <span class="co"># Full item list</span></span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,             <span class="co"># Collection config</span></span>
+<span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,               <span class="co"># Collection state</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,               <span class="co"># HTML IDs</span></span>
+<span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>    urls: VirtualCollectionUrls,                 <span class="co"># URL bundle</span></span>
+<span id="cb15-7"><a href="#cb15-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,      <span class="co"># Table layout cell render callback</span></span>
+<span id="cb15-8"><a href="#cb15-8" aria-hidden="true" tabindex="-1"></a>    render_item: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,      <span class="co"># Grid layout item render callback</span></span>
+<span id="cb15-9"><a href="#cb15-9" aria-hidden="true" tabindex="-1"></a>    render_empty: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,     <span class="co"># Empty state callback: () -&gt; FT component</span></span>
+<span id="cb15-10"><a href="#cb15-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Div:  <span class="co"># Complete collection element</span></span>
+<span id="cb15-11"><a href="#cb15-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a complete virtual collection with wrapper, table, scrollbar, and footer."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="components.footer-footer.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="components.footer-footer.ipynb">components.footer (<code>footer.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Footer component showing item range indicator.</p>
+</blockquote>
+<section id="import-4" class="level4">
+<h4 class="anchored" data-anchor-id="import-4">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.components.footer <span class="im">import</span> (</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>    render_footer</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-3" class="level4">
+<h4 class="anchored" data-anchor-id="functions-3">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_footer(state: VirtualCollectionState,     <span class="co"># Collection state</span></span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>                  ids: VirtualCollectionHtmlIds,      <span class="co"># HTML IDs</span></span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>                  oob: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,                  <span class="co"># Whether to include hx-swap-oob</span></span>
+<span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a>                 ) <span class="op">-&gt;</span> Div:  <span class="co"># Footer element</span></span>
+<span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render the footer with item range indicator."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="routes.handlers-handlers.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="routes.handlers-handlers.ipynb">routes.handlers (<code>handlers.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Response builder functions for virtual collection navigation (Tier 1 API).</p>
+</blockquote>
+<section id="import-5" class="level4">
+<h4 class="anchored" data-anchor-id="import-5">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.routes.handlers <span class="im">import</span> (</span>
+<span id="cb18-2"><a href="#cb18-2" aria-hidden="true" tabindex="-1"></a>    build_nav_response,</span>
+<span id="cb18-3"><a href="#cb18-3" aria-hidden="true" tabindex="-1"></a>    build_cursor_move_response,</span>
+<span id="cb18-4"><a href="#cb18-4" aria-hidden="true" tabindex="-1"></a>    handle_navigate,</span>
+<span id="cb18-5"><a href="#cb18-5" aria-hidden="true" tabindex="-1"></a>    handle_navigate_to_index,</span>
+<span id="cb18-6"><a href="#cb18-6" aria-hidden="true" tabindex="-1"></a>    handle_update_viewport,</span>
+<span id="cb18-7"><a href="#cb18-7" aria-hidden="true" tabindex="-1"></a>    handle_focus_row,</span>
+<span id="cb18-8"><a href="#cb18-8" aria-hidden="true" tabindex="-1"></a>    handle_activate,</span>
+<span id="cb18-9"><a href="#cb18-9" aria-hidden="true" tabindex="-1"></a>    handle_sort,</span>
+<span id="cb18-10"><a href="#cb18-10" aria-hidden="true" tabindex="-1"></a>    build_items_changed_response</span>
+<span id="cb18-11"><a href="#cb18-11" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-4" class="level4">
+<h4 class="anchored" data-anchor-id="functions-4">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb19"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb19-1"><a href="#cb19-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _render_window_start_oob(</span>
+<span id="cb19-2"><a href="#cb19-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,     <span class="co"># Current state</span></span>
+<span id="cb19-3"><a href="#cb19-3" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs</span></span>
+<span id="cb19-4"><a href="#cb19-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Hidden:  <span class="co"># Hidden input with OOB swap</span></span>
+<span id="cb19-5"><a href="#cb19-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render OOB hidden input carrying the current window_start for JS thumb positioning."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _render_scrollbar_nav_oob(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,     <span class="co"># Current state</span></span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,   <span class="co"># Collection config</span></span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs</span></span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="st">'Any'</span>:  <span class="co"># Scrollbar element with OOB swap (or None if no scrollbar configured)</span></span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render OOB scrollbar with fresh data attributes."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb21"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_nav_response(</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (already mutated)</span></span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (slot OOBs + footer + window_start input + scrollbar)</span></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Build OOB response for navigation: all visible slots + footer + window_start + scrollbar."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb22"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb22-1"><a href="#cb22-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_cursor_move_response(</span>
+<span id="cb22-2"><a href="#cb22-2" aria-hidden="true" tabindex="-1"></a>    old_cursor: <span class="bu">int</span>,                        <span class="co"># Previous cursor index</span></span>
+<span id="cb22-3"><a href="#cb22-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb22-4"><a href="#cb22-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (cursor already updated)</span></span>
+<span id="cb22-5"><a href="#cb22-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb22-6"><a href="#cb22-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb22-7"><a href="#cb22-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb22-8"><a href="#cb22-8" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb22-9"><a href="#cb22-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (affected slot OOBs + footer + window_start input + scrollbar)</span></span>
+<span id="cb22-10"><a href="#cb22-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Build OOB response for cursor-only move: swap just the affected slots."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb23"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _is_cursor_visible(</span>
+<span id="cb23-2"><a href="#cb23-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,  <span class="co"># Current state</span></span>
+<span id="cb23-3"><a href="#cb23-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">bool</span>:  <span class="co"># Whether cursor is within the visible window</span></span>
+<span id="cb23-4"><a href="#cb23-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Check if the cursor index is within the current visible window."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb24"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb24-1"><a href="#cb24-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _append_cursor_change(</span>
+<span id="cb24-2"><a href="#cb24-2" aria-hidden="true" tabindex="-1"></a>    result: Tuple,                          <span class="co"># Base response tuple</span></span>
+<span id="cb24-3"><a href="#cb24-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb24-4"><a href="#cb24-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state</span></span>
+<span id="cb24-5"><a href="#cb24-5" aria-hidden="true" tabindex="-1"></a>    on_cursor_change: Optional[Callable],   <span class="co"># Callback: (item, cursor_index, state) -&gt; Tuple</span></span>
+<span id="cb24-6"><a href="#cb24-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># Response with appended cursor change OOB elements</span></span>
+<span id="cb24-7"><a href="#cb24-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Append on_cursor_change callback results to a response tuple."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb25"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _scroll_to_cursor(</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,  <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="va">None</span></span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Scroll window to bring an off-screen cursor into view."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb26"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb26-1"><a href="#cb26-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_navigate(</span>
+<span id="cb26-2"><a href="#cb26-2" aria-hidden="true" tabindex="-1"></a>    direction: <span class="bu">str</span>,                         <span class="co"># 'up', 'down', 'page_up', 'page_down', 'first', 'last'</span></span>
+<span id="cb26-3"><a href="#cb26-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb26-4"><a href="#cb26-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb26-5"><a href="#cb26-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb26-6"><a href="#cb26-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb26-7"><a href="#cb26-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb26-8"><a href="#cb26-8" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb26-9"><a href="#cb26-9" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable[[Any], <span class="bu">bool</span>]] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Predicate: item -&gt; skip?</span></span>
+<span id="cb26-10"><a href="#cb26-10" aria-hidden="true" tabindex="-1"></a>    on_cursor_change: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Callback: (item, cursor_index, state) -&gt; Tuple</span></span>
+<span id="cb26-11"><a href="#cb26-11" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements</span></span>
+<span id="cb26-12"><a href="#cb26-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Navigate in a direction. Mutates state in place."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb27"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _call_action_callback(</span>
+<span id="cb27-2"><a href="#cb27-2" aria-hidden="true" tabindex="-1"></a>    callback: Callable,  <span class="co"># Consumer callback to invoke</span></span>
+<span id="cb27-3"><a href="#cb27-3" aria-hidden="true" tabindex="-1"></a>    item: Any,  <span class="co"># Item at the cursor position</span></span>
+<span id="cb27-4"><a href="#cb27-4" aria-hidden="true" tabindex="-1"></a>    row_index: <span class="bu">int</span>,  <span class="co"># Row index</span></span>
+<span id="cb27-5"><a href="#cb27-5" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,  <span class="co"># Current VC state</span></span>
+<span id="cb27-6"><a href="#cb27-6" aria-hidden="true" tabindex="-1"></a>    request: Any <span class="op">=</span> <span class="va">None</span>,  <span class="co"># FastHTML request (passed if callback accepts it)</span></span>
+<span id="cb27-7"><a href="#cb27-7" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Any:  <span class="co"># Callback result</span></span>
+<span id="cb27-8"><a href="#cb27-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Call an action callback, passing request if the callback signature accepts it."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb28"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_navigate_to_index(</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>    target_index: <span class="bu">int</span>,                      <span class="co"># Target window_start</span></span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements</span></span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Navigate to a specific index. Mutates state.window_start in place."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb29"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _render_scrollbar_oob(</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,     <span class="co"># Current state</span></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,   <span class="co"># Collection config</span></span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs</span></span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Any:  <span class="co"># Scrollbar element with OOB swap (or None if no scrollbar configured)</span></span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render OOB scrollbar with fresh data attributes."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb30"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb30-1"><a href="#cb30-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _build_container_response(</span>
+<span id="cb30-2"><a href="#cb30-2" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb30-3"><a href="#cb30-3" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state</span></span>
+<span id="cb30-4"><a href="#cb30-4" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb30-5"><a href="#cb30-5" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb30-6"><a href="#cb30-6" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb30-7"><a href="#cb30-7" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (container + footer + window_start input [+ scrollbar])</span></span>
+<span id="cb30-9"><a href="#cb30-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Build OOB response that replaces the entire rows container with new slots."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb31"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_update_viewport(</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>    visible_rows: <span class="bu">int</span>,                      <span class="co"># New visible row count</span></span>
+<span id="cb31-3"><a href="#cb31-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb31-4"><a href="#cb31-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb31-5"><a href="#cb31-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb31-6"><a href="#cb31-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb31-7"><a href="#cb31-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb31-8"><a href="#cb31-8" aria-hidden="true" tabindex="-1"></a>    is_auto: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>,                   <span class="co"># Whether from auto-fit</span></span>
+<span id="cb31-9"><a href="#cb31-9" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb31-10"><a href="#cb31-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements</span></span>
+<span id="cb31-11"><a href="#cb31-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Update viewport with new row count. Mutates state in place."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb32"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb32-1"><a href="#cb32-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_focus_row(</span>
+<span id="cb32-2"><a href="#cb32-2" aria-hidden="true" tabindex="-1"></a>    row_index: <span class="bu">int</span>,                         <span class="co"># Row index to focus</span></span>
+<span id="cb32-3"><a href="#cb32-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb32-4"><a href="#cb32-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb32-5"><a href="#cb32-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb32-6"><a href="#cb32-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb32-7"><a href="#cb32-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb32-8"><a href="#cb32-8" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb32-9"><a href="#cb32-9" aria-hidden="true" tabindex="-1"></a>    on_refocus: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Callback when clicking already-focused row: (item, row_index, state) -&gt; Tuple</span></span>
+<span id="cb32-10"><a href="#cb32-10" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable[[Any], <span class="bu">bool</span>]] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Predicate: item -&gt; skip?</span></span>
+<span id="cb32-11"><a href="#cb32-11" aria-hidden="true" tabindex="-1"></a>    on_cursor_change: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Callback: (item, cursor_index, state) -&gt; Tuple</span></span>
+<span id="cb32-12"><a href="#cb32-12" aria-hidden="true" tabindex="-1"></a>    request: Any <span class="op">=</span> <span class="va">None</span>,  <span class="co"># FastHTML request (passed to on_refocus if it accepts it)</span></span>
+<span id="cb32-13"><a href="#cb32-13" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (affected slot OOBs + footer + window_start input)</span></span>
+<span id="cb32-14"><a href="#cb32-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb32-15"><a href="#cb32-15" aria-hidden="true" tabindex="-1"></a><span class="co">    Move cursor to a specific row via click/tap/scrollbar.</span></span>
+<span id="cb32-16"><a href="#cb32-16" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb32-17"><a href="#cb32-17" aria-hidden="true" tabindex="-1"></a><span class="co">    If the clicked row is skippable, finds the nearest focusable row (searching</span></span>
+<span id="cb32-18"><a href="#cb32-18" aria-hidden="true" tabindex="-1"></a><span class="co">    forward first, then backward) and focuses that instead. This ensures scrollbar</span></span>
+<span id="cb32-19"><a href="#cb32-19" aria-hidden="true" tabindex="-1"></a><span class="co">    drag to a skippable region still moves cursor to the closest data row.</span></span>
+<span id="cb32-20"><a href="#cb32-20" aria-hidden="true" tabindex="-1"></a><span class="co">    If `on_refocus` is provided and the target row is already the cursor,</span></span>
+<span id="cb32-21"><a href="#cb32-21" aria-hidden="true" tabindex="-1"></a><span class="co">    delegates to `on_refocus` instead of the normal cursor-move logic.</span></span>
+<span id="cb32-22"><a href="#cb32-22" aria-hidden="true" tabindex="-1"></a><span class="co">    When the target row is off-screen (e.g. scrollbar drag to distant row),</span></span>
+<span id="cb32-23"><a href="#cb32-23" aria-hidden="true" tabindex="-1"></a><span class="co">    scrolls the viewport and rebuilds all visible slots.</span></span>
+<span id="cb32-24"><a href="#cb32-24" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb33"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_activate(</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    on_activate: Callable,                  <span class="co"># Consumer callback: (item, row_index, state[, request]) -&gt; Tuple of OOB elements</span></span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    request: Any <span class="op">=</span> <span class="va">None</span>,  <span class="co"># FastHTML request (passed to on_activate if it accepts it)</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements from consumer callback</span></span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Activate the focused row via Space/Enter. Delegates to consumer callback."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb34"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> handle_sort(</span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>    column_key: <span class="bu">str</span>,                        <span class="co"># Column key to sort by</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                            <span class="co"># Full item list</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,          <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,        <span class="co"># Collection config</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,          <span class="co"># HTML IDs</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>    sort_callback: Callable,                <span class="co"># Consumer: (items, column_key, ascending) -&gt; sorted items</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>    sort_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                     <span class="co"># Sort URL for header re-render</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                    <span class="co"># URL for click-to-focus</span></span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable[[Any], <span class="bu">bool</span>]] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Predicate: item -&gt; skip?</span></span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>    on_cursor_change: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Callback: (item, cursor_index, state) -&gt; Tuple</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (header + rows + footer + window_start)</span></span>
+<span id="cb34-14"><a href="#cb34-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Sort by column. Toggles direction if same column, resets window to start."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb35"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> build_items_changed_response(</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>    items:<span class="bu">list</span>,  <span class="co"># Full item list (already mutated by consumer)</span></span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a>    state:VirtualCollectionState,  <span class="co"># Current state (mutated in place)</span></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>    config:VirtualCollectionConfig,  <span class="co"># Collection config</span></span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    ids:VirtualCollectionHtmlIds,  <span class="co"># HTML IDs</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    render_cell:Callable,  <span class="co"># Consumer cell render callback</span></span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a>    focus_url:<span class="bu">str</span><span class="op">=</span><span class="st">""</span>,  <span class="co"># URL for click-to-focus</span></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>    is_skippable:Optional[Callable[[Any], <span class="bu">bool</span>]]<span class="op">=</span><span class="va">None</span>,  <span class="co"># Predicate: item -&gt; skip?</span></span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    refit_callback:<span class="bu">str</span><span class="op">=</span><span class="st">""</span>,  <span class="co"># JS auto-fit call expression (from auto_fit_callback_name)</span></span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple:  <span class="co"># OOB elements (container + scrollbar + footer + window_start [+ refit trigger])</span></span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Rebuild the VC after the consumer modifies the item list externally.</span></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a><span class="co">    Updates total_items, clamps window_start and cursor_index, then replaces</span></span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a><span class="co">    the entire rows container via OOB. Use this after deleting, adding, or</span></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a><span class="co">    filtering items — any operation that changes the item count.</span></span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a><span class="co">    Pass `refit_callback` (from `auto_fit_callback_name(config)`) to trigger</span></span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a><span class="co">    auto-fit re-evaluation after the update — needed when items are added and</span></span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a><span class="co">    the viewport may have room for more rows than currently rendered.</span></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="core.html_ids-html_ids.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="core.html_ids-html_ids.ipynb">core.html_ids (<code>html_ids.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>HTML element ID generators for virtual collection components.</p>
+</blockquote>
+<section id="import-6" class="level4">
+<h4 class="anchored" data-anchor-id="import-6">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb36"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.core.html_ids <span class="im">import</span> (</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>    VirtualCollectionHtmlIds</span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="classes-1" class="level4">
+<h4 class="anchored" data-anchor-id="classes-1">Classes</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb37"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb37-1"><a href="#cb37-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb37-2"><a href="#cb37-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VirtualCollectionHtmlIds:</span>
+<span id="cb37-3"><a href="#cb37-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"HTML element ID generators for a virtual collection instance."</span></span>
+<span id="cb37-4"><a href="#cb37-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-5"><a href="#cb37-5" aria-hidden="true" tabindex="-1"></a>    prefix: <span class="bu">str</span>  <span class="co"># Instance prefix (e.g., 'vc0', 'fb')</span></span>
+<span id="cb37-6"><a href="#cb37-6" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-7"><a href="#cb37-7" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> collection(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-collection"</span></span>
+<span id="cb37-8"><a href="#cb37-8" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-9"><a href="#cb37-9" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Wrapper (viewport-fit target) --</span></span>
+<span id="cb37-10"><a href="#cb37-10" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-11"><a href="#cb37-11" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> wrapper(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-wrapper"</span></span>
+<span id="cb37-12"><a href="#cb37-12" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-13"><a href="#cb37-13" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> wrapper(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-wrapper"</span></span>
+<span id="cb37-14"><a href="#cb37-14" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-15"><a href="#cb37-15" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Table container --</span></span>
+<span id="cb37-16"><a href="#cb37-16" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-17"><a href="#cb37-17" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> table(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-table"</span></span>
+<span id="cb37-18"><a href="#cb37-18" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-19"><a href="#cb37-19" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> table(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-table"</span></span>
+<span id="cb37-20"><a href="#cb37-20" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-21"><a href="#cb37-21" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Header --</span></span>
+<span id="cb37-22"><a href="#cb37-22" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-23"><a href="#cb37-23" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> header(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-header"</span></span>
+<span id="cb37-24"><a href="#cb37-24" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-25"><a href="#cb37-25" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> header(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-header"</span></span>
+<span id="cb37-26"><a href="#cb37-26" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-27"><a href="#cb37-27" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Viewport (kept for viewport-fit compatibility) --</span></span>
+<span id="cb37-28"><a href="#cb37-28" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-29"><a href="#cb37-29" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> viewport(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-viewport"</span></span>
+<span id="cb37-30"><a href="#cb37-30" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-31"><a href="#cb37-31" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> viewport(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-viewport"</span></span>
+<span id="cb37-32"><a href="#cb37-32" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-33"><a href="#cb37-33" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Rows container (table-row-group) --</span></span>
+<span id="cb37-34"><a href="#cb37-34" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-35"><a href="#cb37-35" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> rows(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-rows"</span></span>
+<span id="cb37-36"><a href="#cb37-36" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-37"><a href="#cb37-37" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> rows(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-rows"</span></span>
+<span id="cb37-38"><a href="#cb37-38" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-39"><a href="#cb37-39" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Slot IDs (position-based, display:contents wrappers) --</span></span>
+<span id="cb37-40"><a href="#cb37-40" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> slot_id(<span class="va">self</span>, slot_index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a viewport slot</span></span>
+<span id="cb37-41"><a href="#cb37-41" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-42"><a href="#cb37-42" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> slot_id(<span class="va">self</span>, slot_index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a viewport slot</span></span>
+<span id="cb37-43"><a href="#cb37-43" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-slot-</span><span class="sc">{</span>slot_index<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb37-44"><a href="#cb37-44" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-45"><a href="#cb37-45" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Dynamic row/cell/item IDs (data-based, on inner content) --</span></span>
+<span id="cb37-46"><a href="#cb37-46" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> row_id(<span class="va">self</span>, index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a table row</span></span>
+<span id="cb37-47"><a href="#cb37-47" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-48"><a href="#cb37-48" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> row_id(<span class="va">self</span>, index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a table row</span></span>
+<span id="cb37-49"><a href="#cb37-49" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-row-</span><span class="sc">{</span>index<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb37-50"><a href="#cb37-50" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-51"><a href="#cb37-51" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> cell_id(<span class="va">self</span>, row_index: <span class="bu">int</span>, col_key: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a table cell</span></span>
+<span id="cb37-52"><a href="#cb37-52" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-53"><a href="#cb37-53" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> cell_id(<span class="va">self</span>, row_index: <span class="bu">int</span>, col_key: <span class="bu">str</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a table cell</span></span>
+<span id="cb37-54"><a href="#cb37-54" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-row-</span><span class="sc">{</span>row_index<span class="sc">}</span><span class="ss">-col-</span><span class="sc">{</span>col_key<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb37-55"><a href="#cb37-55" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-56"><a href="#cb37-56" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> item_id(<span class="va">self</span>, index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a grid item</span></span>
+<span id="cb37-57"><a href="#cb37-57" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-58"><a href="#cb37-58" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> item_id(<span class="va">self</span>, index: <span class="bu">int</span>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># ID for a grid item</span></span>
+<span id="cb37-59"><a href="#cb37-59" aria-hidden="true" tabindex="-1"></a>            <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-item-</span><span class="sc">{</span>index<span class="sc">}</span><span class="ss">"</span></span>
+<span id="cb37-60"><a href="#cb37-60" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-61"><a href="#cb37-61" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Custom scrollbar --</span></span>
+<span id="cb37-62"><a href="#cb37-62" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-63"><a href="#cb37-63" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> scrollbar_track(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-scrollbar-track"</span></span>
+<span id="cb37-64"><a href="#cb37-64" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-65"><a href="#cb37-65" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> scrollbar_track(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-scrollbar-track"</span></span>
+<span id="cb37-66"><a href="#cb37-66" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-67"><a href="#cb37-67" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-68"><a href="#cb37-68" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> scrollbar_thumb(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-scrollbar-thumb"</span></span>
+<span id="cb37-69"><a href="#cb37-69" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-70"><a href="#cb37-70" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> scrollbar_thumb(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-scrollbar-thumb"</span></span>
+<span id="cb37-71"><a href="#cb37-71" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-72"><a href="#cb37-72" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Footer --</span></span>
+<span id="cb37-73"><a href="#cb37-73" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-74"><a href="#cb37-74" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> footer(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-footer"</span></span>
+<span id="cb37-75"><a href="#cb37-75" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-76"><a href="#cb37-76" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> footer(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-footer"</span></span>
+<span id="cb37-77"><a href="#cb37-77" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-78"><a href="#cb37-78" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Progress indicator --</span></span>
+<span id="cb37-79"><a href="#cb37-79" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-80"><a href="#cb37-80" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> progress(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-progress"</span></span>
+<span id="cb37-81"><a href="#cb37-81" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-82"><a href="#cb37-82" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> progress(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-progress"</span></span>
+<span id="cb37-83"><a href="#cb37-83" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-84"><a href="#cb37-84" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Hidden inputs --</span></span>
+<span id="cb37-85"><a href="#cb37-85" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-86"><a href="#cb37-86" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> window_start_input(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-window-start-input"</span></span>
+<span id="cb37-87"><a href="#cb37-87" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-88"><a href="#cb37-88" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> window_start_input(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-window-start-input"</span></span>
+<span id="cb37-89"><a href="#cb37-89" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-90"><a href="#cb37-90" aria-hidden="true" tabindex="-1"></a>        <span class="co"># -- Refit trigger (OOB target for auto-fit re-evaluation after item mutations) --</span></span>
+<span id="cb37-91"><a href="#cb37-91" aria-hidden="true" tabindex="-1"></a>        <span class="at">@property</span></span>
+<span id="cb37-92"><a href="#cb37-92" aria-hidden="true" tabindex="-1"></a>        <span class="kw">def</span> refit_trigger(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-refit-trigger"</span></span>
+<span id="cb37-93"><a href="#cb37-93" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb37-94"><a href="#cb37-94" aria-hidden="true" tabindex="-1"></a>    <span class="kw">def</span> refit_trigger(<span class="va">self</span>) <span class="op">-&gt;</span> <span class="bu">str</span>: <span class="cf">return</span> <span class="ss">f"</span><span class="sc">{</span><span class="va">self</span><span class="sc">.</span>prefix<span class="sc">}</span><span class="ss">-refit-trigger"</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="core.models-models.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="core.models-models.ipynb">core.models (<code>models.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Data models for virtual collection state, configuration, column definitions, render contexts, and URL bundles.</p>
+</blockquote>
+<section id="import-7" class="level4">
+<h4 class="anchored" data-anchor-id="import-7">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb38"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb38-1"><a href="#cb38-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.core.models <span class="im">import</span> (</span>
+<span id="cb38-2"><a href="#cb38-2" aria-hidden="true" tabindex="-1"></a>    ColumnDef,</span>
+<span id="cb38-3"><a href="#cb38-3" aria-hidden="true" tabindex="-1"></a>    VirtualCollectionConfig,</span>
+<span id="cb38-4"><a href="#cb38-4" aria-hidden="true" tabindex="-1"></a>    VirtualCollectionState,</span>
+<span id="cb38-5"><a href="#cb38-5" aria-hidden="true" tabindex="-1"></a>    RowRenderContext,</span>
+<span id="cb38-6"><a href="#cb38-6" aria-hidden="true" tabindex="-1"></a>    CellRenderContext,</span>
+<span id="cb38-7"><a href="#cb38-7" aria-hidden="true" tabindex="-1"></a>    VirtualCollectionUrls</span>
+<span id="cb38-8"><a href="#cb38-8" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-5" class="level4">
+<h4 class="anchored" data-anchor-id="functions-5">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb39"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb39-1"><a href="#cb39-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _auto_prefix() <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># Auto-generated prefix like 'vc0', 'vc1', etc.</span></span>
+<span id="cb39-2"><a href="#cb39-2" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Generate a unique prefix for a virtual collection instance."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="classes-2" class="level4">
+<h4 class="anchored" data-anchor-id="classes-2">Classes</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb40"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb40-1"><a href="#cb40-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb40-2"><a href="#cb40-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> ColumnDef:</span>
+<span id="cb40-3"><a href="#cb40-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Column definition for table layout."</span></span>
+<span id="cb40-4"><a href="#cb40-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb40-5"><a href="#cb40-5" aria-hidden="true" tabindex="-1"></a>    key: <span class="bu">str</span>  <span class="co"># Unique column identifier (used in cell IDs)</span></span>
+<span id="cb40-6"><a href="#cb40-6" aria-hidden="true" tabindex="-1"></a>    header: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Display text for header</span></span>
+<span id="cb40-7"><a href="#cb40-7" aria-hidden="true" tabindex="-1"></a>    sortable: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>  <span class="co"># Whether column header is clickable for sort</span></span>
+<span id="cb40-8"><a href="#cb40-8" aria-hidden="true" tabindex="-1"></a>    header_cls: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Additional CSS classes for header cell</span></span>
+<span id="cb40-9"><a href="#cb40-9" aria-hidden="true" tabindex="-1"></a>    cell_cls: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Additional CSS classes for data cells</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb41"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb41-1"><a href="#cb41-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb41-2"><a href="#cb41-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VirtualCollectionConfig:</span>
+<span id="cb41-3"><a href="#cb41-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Initialization-time configuration for a virtual collection."</span></span>
+<span id="cb41-4"><a href="#cb41-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb41-5"><a href="#cb41-5" aria-hidden="true" tabindex="-1"></a>    prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># HTML ID prefix (auto-generated if empty)</span></span>
+<span id="cb41-6"><a href="#cb41-6" aria-hidden="true" tabindex="-1"></a>    layout: <span class="bu">str</span> <span class="op">=</span> <span class="st">'table'</span>  <span class="co"># 'table' or 'grid'</span></span>
+<span id="cb41-7"><a href="#cb41-7" aria-hidden="true" tabindex="-1"></a>    columns: Tuple[ColumnDef, ...] <span class="op">=</span> ()  <span class="co"># Column definitions</span></span>
+<span id="cb41-8"><a href="#cb41-8" aria-hidden="true" tabindex="-1"></a>    columns_per_row: <span class="bu">int</span> <span class="op">=</span> <span class="dv">4</span>  <span class="co"># Items per grid row</span></span>
+<span id="cb41-9"><a href="#cb41-9" aria-hidden="true" tabindex="-1"></a>    grid_gap: <span class="bu">str</span> <span class="op">=</span> <span class="st">'1rem'</span>  <span class="co"># Gap between grid items</span></span>
+<span id="cb41-10"><a href="#cb41-10" aria-hidden="true" tabindex="-1"></a>    disable_scroll_in_modes: Tuple[<span class="bu">str</span>, ...] <span class="op">=</span> ()  <span class="co"># Mode-based scroll suppression</span></span>
+<span id="cb41-11"><a href="#cb41-11" aria-hidden="true" tabindex="-1"></a>    show_scrollbar: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>  <span class="co"># Show custom scrollbar</span></span>
+<span id="cb41-12"><a href="#cb41-12" aria-hidden="true" tabindex="-1"></a>    min_thumb_height: <span class="bu">int</span> <span class="op">=</span> <span class="dv">24</span>  <span class="co"># Minimum scrollbar thumb height (px)</span></span>
+<span id="cb41-13"><a href="#cb41-13" aria-hidden="true" tabindex="-1"></a>    </span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb42"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb42-1"><a href="#cb42-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb42-2"><a href="#cb42-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VirtualCollectionState:</span>
+<span id="cb42-3"><a href="#cb42-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Mutable runtime state for a virtual collection."</span></span>
+<span id="cb42-4"><a href="#cb42-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb42-5"><a href="#cb42-5" aria-hidden="true" tabindex="-1"></a>    window_start: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>  <span class="co"># First visible row index</span></span>
+<span id="cb42-6"><a href="#cb42-6" aria-hidden="true" tabindex="-1"></a>    visible_rows: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Number of visible rows (from auto-fit)</span></span>
+<span id="cb42-7"><a href="#cb42-7" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span>  <span class="co"># Total item count (set by consumer)</span></span>
+<span id="cb42-8"><a href="#cb42-8" aria-hidden="true" tabindex="-1"></a>    viewport_height: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.0</span>  <span class="co"># Measured viewport height (px)</span></span>
+<span id="cb42-9"><a href="#cb42-9" aria-hidden="true" tabindex="-1"></a>    is_auto_mode: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>  <span class="co"># Auto-adjust visible rows from viewport</span></span>
+<span id="cb42-10"><a href="#cb42-10" aria-hidden="true" tabindex="-1"></a>    cursor_index: <span class="bu">int</span> <span class="op">=</span> <span class="op">-</span><span class="dv">1</span>  <span class="co"># Keyboard cursor position (-1 = none)</span></span>
+<span id="cb42-11"><a href="#cb42-11" aria-hidden="true" tabindex="-1"></a>    sort_column: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Current sort column key (empty = unsorted)</span></span>
+<span id="cb42-12"><a href="#cb42-12" aria-hidden="true" tabindex="-1"></a>    sort_ascending: <span class="bu">bool</span> <span class="op">=</span> <span class="va">True</span>  <span class="co"># Sort direction</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb43"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> RowRenderContext:</span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Context passed to row/item render callback."</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>    index: <span class="bu">int</span>  <span class="co"># Row index in the full collection</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span>  <span class="co"># Total item count</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>    is_cursor: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>  <span class="co"># Whether this row is the keyboard cursor</span></span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    is_first_visible: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>  <span class="co"># First row in current window</span></span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>    is_last_visible: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>  <span class="co"># Last row in current window</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb44"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb44-1"><a href="#cb44-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb44-2"><a href="#cb44-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> CellRenderContext:</span>
+<span id="cb44-3"><a href="#cb44-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Context passed to cell render callback."</span></span>
+<span id="cb44-4"><a href="#cb44-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb44-5"><a href="#cb44-5" aria-hidden="true" tabindex="-1"></a>    row_index: <span class="bu">int</span>  <span class="co"># Row index in the full collection</span></span>
+<span id="cb44-6"><a href="#cb44-6" aria-hidden="true" tabindex="-1"></a>    column: ColumnDef  <span class="co"># Column definition</span></span>
+<span id="cb44-7"><a href="#cb44-7" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span>  <span class="co"># Total item count</span></span>
+<span id="cb44-8"><a href="#cb44-8" aria-hidden="true" tabindex="-1"></a>    is_cursor: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>  <span class="co"># Whether this row is the keyboard cursor</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb45"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb45-1"><a href="#cb45-1" aria-hidden="true" tabindex="-1"></a><span class="at">@dataclass</span></span>
+<span id="cb45-2"><a href="#cb45-2" aria-hidden="true" tabindex="-1"></a><span class="kw">class</span> VirtualCollectionUrls:</span>
+<span id="cb45-3"><a href="#cb45-3" aria-hidden="true" tabindex="-1"></a>    <span class="co">"URL bundle for HTMX endpoints."</span></span>
+<span id="cb45-4"><a href="#cb45-4" aria-hidden="true" tabindex="-1"></a>    </span>
+<span id="cb45-5"><a href="#cb45-5" aria-hidden="true" tabindex="-1"></a>    nav_up: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate up one row</span></span>
+<span id="cb45-6"><a href="#cb45-6" aria-hidden="true" tabindex="-1"></a>    nav_down: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate down one row</span></span>
+<span id="cb45-7"><a href="#cb45-7" aria-hidden="true" tabindex="-1"></a>    nav_page_up: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate up one page</span></span>
+<span id="cb45-8"><a href="#cb45-8" aria-hidden="true" tabindex="-1"></a>    nav_page_down: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate down one page</span></span>
+<span id="cb45-9"><a href="#cb45-9" aria-hidden="true" tabindex="-1"></a>    nav_first: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate to first row</span></span>
+<span id="cb45-10"><a href="#cb45-10" aria-hidden="true" tabindex="-1"></a>    nav_last: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate to last row</span></span>
+<span id="cb45-11"><a href="#cb45-11" aria-hidden="true" tabindex="-1"></a>    nav_to_index: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Navigate to specific row index</span></span>
+<span id="cb45-12"><a href="#cb45-12" aria-hidden="true" tabindex="-1"></a>    update_viewport: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Update visible_rows (auto-fit)</span></span>
+<span id="cb45-13"><a href="#cb45-13" aria-hidden="true" tabindex="-1"></a>    focus_row: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Move cursor to a specific row (click/tap)</span></span>
+<span id="cb45-14"><a href="#cb45-14" aria-hidden="true" tabindex="-1"></a>    activate: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Activate focused row (Space/Enter)</span></span>
+<span id="cb45-15"><a href="#cb45-15" aria-hidden="true" tabindex="-1"></a>    scrollbar_focus: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Move cursor via scrollbar drag/click (no refocus)</span></span>
+<span id="cb45-16"><a href="#cb45-16" aria-hidden="true" tabindex="-1"></a>    sort: <span class="bu">str</span> <span class="op">=</span> <span class="st">''</span>  <span class="co"># Sort by column (header click)</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="variables" class="level4">
+<h4 class="anchored" data-anchor-id="variables">Variables</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb46"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb46-1"><a href="#cb46-1" aria-hidden="true" tabindex="-1"></a>_prefix_counter: <span class="bu">int</span> <span class="op">=</span> <span class="dv">0</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="routes.router-router.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="routes.router-router.ipynb">routes.router (<code>router.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Convenience router factory that wires up standard virtual collection routes (Tier 2 API).</p>
+</blockquote>
+<section id="import-8" class="level4">
+<h4 class="anchored" data-anchor-id="import-8">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb47"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb47-1"><a href="#cb47-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.routes.router <span class="im">import</span> (</span>
+<span id="cb47-2"><a href="#cb47-2" aria-hidden="true" tabindex="-1"></a>    init_virtual_collection_router</span>
+<span id="cb47-3"><a href="#cb47-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-6" class="level4">
+<h4 class="anchored" data-anchor-id="functions-6">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb48"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb48-1"><a href="#cb48-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> init_virtual_collection_router(</span>
+<span id="cb48-2"><a href="#cb48-2" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,                    <span class="co"># Collection config</span></span>
+<span id="cb48-3"><a href="#cb48-3" aria-hidden="true" tabindex="-1"></a>    state_getter: Callable[[], VirtualCollectionState],  <span class="co"># Function to get current state</span></span>
+<span id="cb48-4"><a href="#cb48-4" aria-hidden="true" tabindex="-1"></a>    state_setter: Callable[[VirtualCollectionState], <span class="va">None</span>],  <span class="co"># Function to save state</span></span>
+<span id="cb48-5"><a href="#cb48-5" aria-hidden="true" tabindex="-1"></a>    get_items: Callable[[], <span class="bu">list</span>],                       <span class="co"># Function to get current items</span></span>
+<span id="cb48-6"><a href="#cb48-6" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                               <span class="co"># Cell render callback</span></span>
+<span id="cb48-7"><a href="#cb48-7" aria-hidden="true" tabindex="-1"></a>    on_activate: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,              <span class="co"># Consumer callback for Space/Enter on focused row</span></span>
+<span id="cb48-8"><a href="#cb48-8" aria-hidden="true" tabindex="-1"></a>    on_refocus: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,               <span class="co"># Consumer callback when clicking already-focused row</span></span>
+<span id="cb48-9"><a href="#cb48-9" aria-hidden="true" tabindex="-1"></a>    sort_callback: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,            <span class="co"># Consumer callback: (items, column_key, ascending) -&gt; None</span></span>
+<span id="cb48-10"><a href="#cb48-10" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,             <span class="co"># Predicate: (item) -&gt; bool, cursor skips these items</span></span>
+<span id="cb48-11"><a href="#cb48-11" aria-hidden="true" tabindex="-1"></a>    on_cursor_change: Optional[Callable] <span class="op">=</span> <span class="va">None</span>,         <span class="co"># Callback: (item, cursor_index, state) -&gt; Tuple of extra OOB elements</span></span>
+<span id="cb48-12"><a href="#cb48-12" aria-hidden="true" tabindex="-1"></a>    route_prefix: <span class="bu">str</span> <span class="op">=</span> <span class="st">"/collection"</span>,                   <span class="co"># Route prefix</span></span>
+<span id="cb48-13"><a href="#cb48-13" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple[APIRouter, VirtualCollectionUrls]:  <span class="co"># (router, urls) tuple</span></span>
+<span id="cb48-14"><a href="#cb48-14" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Initialize an APIRouter with all standard virtual collection routes."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="js.scroll-scroll.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="js.scroll-scroll.ipynb">js.scroll (<code>scroll.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>JavaScript generator for scroll wheel to navigation conversion.</p>
+</blockquote>
+<section id="import-9" class="level4">
+<h4 class="anchored" data-anchor-id="import-9">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb49"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb49-1"><a href="#cb49-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.js.scroll <span class="im">import</span> (</span>
+<span id="cb49-2"><a href="#cb49-2" aria-hidden="true" tabindex="-1"></a>    SCROLL_THRESHOLD,</span>
+<span id="cb49-3"><a href="#cb49-3" aria-hidden="true" tabindex="-1"></a>    NAVIGATION_COOLDOWN,</span>
+<span id="cb49-4"><a href="#cb49-4" aria-hidden="true" tabindex="-1"></a>    TRACKPAD_COOLDOWN,</span>
+<span id="cb49-5"><a href="#cb49-5" aria-hidden="true" tabindex="-1"></a>    generate_scroll_nav_js</span>
+<span id="cb49-6"><a href="#cb49-6" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-7" class="level4">
+<h4 class="anchored" data-anchor-id="functions-7">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb50"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb50-1"><a href="#cb50-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_scroll_nav_js(</span>
+<span id="cb50-2"><a href="#cb50-2" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,       <span class="co"># HTML IDs for this collection</span></span>
+<span id="cb50-3"><a href="#cb50-3" aria-hidden="true" tabindex="-1"></a>    button_ids: VirtualCollectionButtonIds,  <span class="co"># Button IDs for nav triggers</span></span>
+<span id="cb50-4"><a href="#cb50-4" aria-hidden="true" tabindex="-1"></a>    disable_in_modes: Tuple[<span class="bu">str</span>, ...] <span class="op">=</span> (),  <span class="co"># Mode names where scroll is suppressed</span></span>
+<span id="cb50-5"><a href="#cb50-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># JavaScript IIFE</span></span>
+<span id="cb50-6"><a href="#cb50-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Generate JS for scroll wheel to navigation conversion."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="variables-1" class="level4">
+<h4 class="anchored" data-anchor-id="variables-1">Variables</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb51"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb51-1"><a href="#cb51-1" aria-hidden="true" tabindex="-1"></a>SCROLL_THRESHOLD <span class="op">=</span> <span class="dv">1</span>  <span class="co"># Minimum accumulated delta to trigger navigation (px)</span></span>
+<span id="cb51-2"><a href="#cb51-2" aria-hidden="true" tabindex="-1"></a>NAVIGATION_COOLDOWN <span class="op">=</span> <span class="dv">100</span>  <span class="co"># Mouse wheel cooldown (ms)</span></span>
+<span id="cb51-3"><a href="#cb51-3" aria-hidden="true" tabindex="-1"></a>TRACKPAD_COOLDOWN <span class="op">=</span> <span class="dv">250</span>  <span class="co"># Trackpad cooldown (ms) — higher to prevent rapid-fire</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="components.scrollbar-scrollbar.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="components.scrollbar-scrollbar.ipynb">components.scrollbar (<code>scrollbar.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Custom scrollbar component with proportional thumb for position indication.</p>
+</blockquote>
+<section id="import-10" class="level4">
+<h4 class="anchored" data-anchor-id="import-10">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb52"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb52-1"><a href="#cb52-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.components.scrollbar <span class="im">import</span> (</span>
+<span id="cb52-2"><a href="#cb52-2" aria-hidden="true" tabindex="-1"></a>    render_scrollbar_thumb,</span>
+<span id="cb52-3"><a href="#cb52-3" aria-hidden="true" tabindex="-1"></a>    render_scrollbar</span>
+<span id="cb52-4"><a href="#cb52-4" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-8" class="level4">
+<h4 class="anchored" data-anchor-id="functions-8">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb53"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb53-1"><a href="#cb53-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _map_to_scrollbar(</span>
+<span id="cb53-2"><a href="#cb53-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,</span>
+<span id="cb53-3"><a href="#cb53-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,</span>
+<span id="cb53-4"><a href="#cb53-4" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,</span>
+<span id="cb53-5"><a href="#cb53-5" aria-hidden="true" tabindex="-1"></a>):  <span class="co"># (ScrollbarState, ScrollbarConfig, ScrollbarIds)</span></span>
+<span id="cb53-6"><a href="#cb53-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"""</span></span>
+<span id="cb53-7"><a href="#cb53-7" aria-hidden="true" tabindex="-1"></a><span class="co">    Map VC types to scrollbar lib types.</span></span>
+<span id="cb53-8"><a href="#cb53-8" aria-hidden="true" tabindex="-1"></a><span class="co">    </span></span>
+<span id="cb53-9"><a href="#cb53-9" aria-hidden="true" tabindex="-1"></a><span class="co">    Uses cursor-based model (like card-stack): scrollbar position tracks</span></span>
+<span id="cb53-10"><a href="#cb53-10" aria-hidden="true" tabindex="-1"></a><span class="co">    the focused row, not the viewport window offset. This ensures dragging</span></span>
+<span id="cb53-11"><a href="#cb53-11" aria-hidden="true" tabindex="-1"></a><span class="co">    the thumb to the very top/bottom always reaches the first/last item.</span></span>
+<span id="cb53-12"><a href="#cb53-12" aria-hidden="true" tabindex="-1"></a><span class="co">    Always visible (auto_hide=False) since the scrollbar serves as a</span></span>
+<span id="cb53-13"><a href="#cb53-13" aria-hidden="true" tabindex="-1"></a><span class="co">    position indicator, not just an overflow indicator.</span></span>
+<span id="cb53-14"><a href="#cb53-14" aria-hidden="true" tabindex="-1"></a><span class="co">    """</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb54"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb54-1"><a href="#cb54-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_scrollbar_thumb(</span>
+<span id="cb54-2"><a href="#cb54-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,       <span class="co"># Collection state</span></span>
+<span id="cb54-3"><a href="#cb54-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,      <span class="co"># Collection config</span></span>
+<span id="cb54-4"><a href="#cb54-4" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,        <span class="co"># HTML IDs</span></span>
+<span id="cb54-5"><a href="#cb54-5" aria-hidden="true" tabindex="-1"></a>    track_height: <span class="bu">float</span> <span class="op">=</span> <span class="fl">600.0</span>,          <span class="co"># Track height for min thumb calculation</span></span>
+<span id="cb54-6"><a href="#cb54-6" aria-hidden="true" tabindex="-1"></a>    oob: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,                    <span class="co"># Whether to include hx-swap-oob</span></span>
+<span id="cb54-7"><a href="#cb54-7" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Div:  <span class="co"># Thumb element</span></span>
+<span id="cb54-8"><a href="#cb54-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render the scrollbar thumb at the correct position."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb55"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb55-1"><a href="#cb55-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_scrollbar(</span>
+<span id="cb55-2"><a href="#cb55-2" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,       <span class="co"># Collection state</span></span>
+<span id="cb55-3"><a href="#cb55-3" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,      <span class="co"># Collection config</span></span>
+<span id="cb55-4"><a href="#cb55-4" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,        <span class="co"># HTML IDs</span></span>
+<span id="cb55-5"><a href="#cb55-5" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Div:  <span class="co"># Complete scrollbar (track + thumb)</span></span>
+<span id="cb55-6"><a href="#cb55-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render the custom scrollbar with track and proportional thumb."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="js.scrollbar-scrollbar.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="js.scrollbar-scrollbar.ipynb">js.scrollbar (<code>scrollbar.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>JavaScript generator for custom scrollbar interaction (drag thumb, click track).</p>
+</blockquote>
+<section id="import-11" class="level4">
+<h4 class="anchored" data-anchor-id="import-11">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb56"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.js.scrollbar <span class="im">import</span> (</span>
+<span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>    generate_scrollbar_js</span>
+<span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-9" class="level4">
+<h4 class="anchored" data-anchor-id="functions-9">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb57"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb57-1"><a href="#cb57-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_scrollbar_js(</span>
+<span id="cb57-2"><a href="#cb57-2" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,   <span class="co"># HTML IDs for this collection</span></span>
+<span id="cb57-3"><a href="#cb57-3" aria-hidden="true" tabindex="-1"></a>    urls: VirtualCollectionUrls,     <span class="co"># URL bundle (for scrollbar_focus)</span></span>
+<span id="cb57-4"><a href="#cb57-4" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># JavaScript code fragment</span></span>
+<span id="cb57-5"><a href="#cb57-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Generate JS for custom scrollbar: drag/click navigates focus position."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="components.table-table.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="components.table-table.ipynb">components.table (<code>table.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Table layout rendering: header row, data rows, and cells using CSS table display.</p>
+</blockquote>
+<section id="import-12" class="level4">
+<h4 class="anchored" data-anchor-id="import-12">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb58"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb58-1"><a href="#cb58-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.components.table <span class="im">import</span> (</span>
+<span id="cb58-2"><a href="#cb58-2" aria-hidden="true" tabindex="-1"></a>    SORT_ICON_SIZE,</span>
+<span id="cb58-3"><a href="#cb58-3" aria-hidden="true" tabindex="-1"></a>    render_header_cell,</span>
+<span id="cb58-4"><a href="#cb58-4" aria-hidden="true" tabindex="-1"></a>    render_header_row,</span>
+<span id="cb58-5"><a href="#cb58-5" aria-hidden="true" tabindex="-1"></a>    render_data_cell,</span>
+<span id="cb58-6"><a href="#cb58-6" aria-hidden="true" tabindex="-1"></a>    render_data_row,</span>
+<span id="cb58-7"><a href="#cb58-7" aria-hidden="true" tabindex="-1"></a>    render_slot,</span>
+<span id="cb58-8"><a href="#cb58-8" aria-hidden="true" tabindex="-1"></a>    render_table_rows,</span>
+<span id="cb58-9"><a href="#cb58-9" aria-hidden="true" tabindex="-1"></a>    render_cell_oob,</span>
+<span id="cb58-10"><a href="#cb58-10" aria-hidden="true" tabindex="-1"></a>    render_row_oob,</span>
+<span id="cb58-11"><a href="#cb58-11" aria-hidden="true" tabindex="-1"></a>    render_visible_cells_oob</span>
+<span id="cb58-12"><a href="#cb58-12" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-10" class="level4">
+<h4 class="anchored" data-anchor-id="functions-10">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb59"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb59-1"><a href="#cb59-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> _sort_indicator(column: ColumnDef,  <span class="co"># Column definition</span></span>
+<span id="cb59-2"><a href="#cb59-2" aria-hidden="true" tabindex="-1"></a>                    state: VirtualCollectionState,  <span class="co"># Collection state (for current sort)</span></span>
+<span id="cb59-3"><a href="#cb59-3" aria-hidden="true" tabindex="-1"></a>                   ) <span class="op">-&gt;</span> Any:  <span class="co"># Sort icon element or empty string</span></span>
+<span id="cb59-4"><a href="#cb59-4" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render sort indicator icon for a sortable header cell."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb60"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb60-1"><a href="#cb60-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_header_cell(column: ColumnDef,  <span class="co"># Column definition</span></span>
+<span id="cb60-2"><a href="#cb60-2" aria-hidden="true" tabindex="-1"></a>                       state: VirtualCollectionState,  <span class="co"># Collection state</span></span>
+<span id="cb60-3"><a href="#cb60-3" aria-hidden="true" tabindex="-1"></a>                       sort_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,  <span class="co"># Sort URL (empty = no click-to-sort)</span></span>
+<span id="cb60-4"><a href="#cb60-4" aria-hidden="true" tabindex="-1"></a>                      ) <span class="op">-&gt;</span> Div:  <span class="co"># Header cell element</span></span>
+<span id="cb60-5"><a href="#cb60-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a single table header cell with optional sort indicator."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb61"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb61-1"><a href="#cb61-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_header_row(config: VirtualCollectionConfig,  <span class="co"># Collection config</span></span>
+<span id="cb61-2"><a href="#cb61-2" aria-hidden="true" tabindex="-1"></a>                      ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs</span></span>
+<span id="cb61-3"><a href="#cb61-3" aria-hidden="true" tabindex="-1"></a>                      state: VirtualCollectionState <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Collection state (for sort indicators)</span></span>
+<span id="cb61-4"><a href="#cb61-4" aria-hidden="true" tabindex="-1"></a>                      sort_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                <span class="co"># Sort URL (empty = no click-to-sort)</span></span>
+<span id="cb61-5"><a href="#cb61-5" aria-hidden="true" tabindex="-1"></a>                     ) <span class="op">-&gt;</span> Div:  <span class="co"># Header row element</span></span>
+<span id="cb61-6"><a href="#cb61-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render the table header row with optional sort indicators."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb62"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb62-1"><a href="#cb62-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_data_cell(item: Any,                    <span class="co"># Data item</span></span>
+<span id="cb62-2"><a href="#cb62-2" aria-hidden="true" tabindex="-1"></a>                     column: ColumnDef,             <span class="co"># Column definition</span></span>
+<span id="cb62-3"><a href="#cb62-3" aria-hidden="true" tabindex="-1"></a>                     row_index: <span class="bu">int</span>,                <span class="co"># Row index</span></span>
+<span id="cb62-4"><a href="#cb62-4" aria-hidden="true" tabindex="-1"></a>                     total_items: <span class="bu">int</span>,              <span class="co"># Total item count</span></span>
+<span id="cb62-5"><a href="#cb62-5" aria-hidden="true" tabindex="-1"></a>                     ids: VirtualCollectionHtmlIds,  <span class="co"># HTML IDs</span></span>
+<span id="cb62-6"><a href="#cb62-6" aria-hidden="true" tabindex="-1"></a>                     render_cell: Callable,          <span class="co"># Consumer cell render callback</span></span>
+<span id="cb62-7"><a href="#cb62-7" aria-hidden="true" tabindex="-1"></a>                     is_cursor: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,        <span class="co"># Whether row is keyboard cursor</span></span>
+<span id="cb62-8"><a href="#cb62-8" aria-hidden="true" tabindex="-1"></a>                    ) <span class="op">-&gt;</span> Div:  <span class="co"># Cell element with stable ID</span></span>
+<span id="cb62-9"><a href="#cb62-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a single data cell with a stable ID for OOB updates."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb63"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb63-1"><a href="#cb63-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_data_row(item: Any,                       <span class="co"># Data item</span></span>
+<span id="cb63-2"><a href="#cb63-2" aria-hidden="true" tabindex="-1"></a>                    row_index: <span class="bu">int</span>,                   <span class="co"># Row index in full collection</span></span>
+<span id="cb63-3"><a href="#cb63-3" aria-hidden="true" tabindex="-1"></a>                    config: VirtualCollectionConfig,   <span class="co"># Collection config</span></span>
+<span id="cb63-4"><a href="#cb63-4" aria-hidden="true" tabindex="-1"></a>                    state: VirtualCollectionState,     <span class="co"># Collection state</span></span>
+<span id="cb63-5"><a href="#cb63-5" aria-hidden="true" tabindex="-1"></a>                    ids: VirtualCollectionHtmlIds,     <span class="co"># HTML IDs</span></span>
+<span id="cb63-6"><a href="#cb63-6" aria-hidden="true" tabindex="-1"></a>                    render_cell: Callable,             <span class="co"># Consumer cell render callback</span></span>
+<span id="cb63-7"><a href="#cb63-7" aria-hidden="true" tabindex="-1"></a>                    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,               <span class="co"># URL for click-to-focus (empty = disabled)</span></span>
+<span id="cb63-8"><a href="#cb63-8" aria-hidden="true" tabindex="-1"></a>                   ) <span class="op">-&gt;</span> Div:  <span class="co"># Row element with stable ID</span></span>
+<span id="cb63-9"><a href="#cb63-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a single data row with all cells."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb64"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb64-1"><a href="#cb64-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_slot(</span>
+<span id="cb64-2"><a href="#cb64-2" aria-hidden="true" tabindex="-1"></a>    slot_index: <span class="bu">int</span>,                       <span class="co"># Position in viewport (0-based)</span></span>
+<span id="cb64-3"><a href="#cb64-3" aria-hidden="true" tabindex="-1"></a>    item: Any,                             <span class="co"># Data item</span></span>
+<span id="cb64-4"><a href="#cb64-4" aria-hidden="true" tabindex="-1"></a>    item_index: <span class="bu">int</span>,                       <span class="co"># Row index in full collection</span></span>
+<span id="cb64-5"><a href="#cb64-5" aria-hidden="true" tabindex="-1"></a>    config: VirtualCollectionConfig,       <span class="co"># Collection config</span></span>
+<span id="cb64-6"><a href="#cb64-6" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,         <span class="co"># Collection state</span></span>
+<span id="cb64-7"><a href="#cb64-7" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,         <span class="co"># HTML IDs</span></span>
+<span id="cb64-8"><a href="#cb64-8" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,                 <span class="co"># Consumer cell render callback</span></span>
+<span id="cb64-9"><a href="#cb64-9" aria-hidden="true" tabindex="-1"></a>    oob: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,                     <span class="co"># Whether to render as OOB swap</span></span>
+<span id="cb64-10"><a href="#cb64-10" aria-hidden="true" tabindex="-1"></a>    focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                   <span class="co"># URL for click-to-focus (empty = disabled)</span></span>
+<span id="cb64-11"><a href="#cb64-11" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Div:  <span class="co"># Slot wrapper (display:contents) containing the data row</span></span>
+<span id="cb64-12"><a href="#cb64-12" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a viewport slot wrapping a data row with display:contents."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb65"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb65-1"><a href="#cb65-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_table_rows(items: <span class="bu">list</span>,                       <span class="co"># Full item list</span></span>
+<span id="cb65-2"><a href="#cb65-2" aria-hidden="true" tabindex="-1"></a>                      config: VirtualCollectionConfig,    <span class="co"># Collection config</span></span>
+<span id="cb65-3"><a href="#cb65-3" aria-hidden="true" tabindex="-1"></a>                      state: VirtualCollectionState,      <span class="co"># Collection state</span></span>
+<span id="cb65-4"><a href="#cb65-4" aria-hidden="true" tabindex="-1"></a>                      ids: VirtualCollectionHtmlIds,      <span class="co"># HTML IDs</span></span>
+<span id="cb65-5"><a href="#cb65-5" aria-hidden="true" tabindex="-1"></a>                      render_cell: Callable,              <span class="co"># Consumer cell render callback</span></span>
+<span id="cb65-6"><a href="#cb65-6" aria-hidden="true" tabindex="-1"></a>                      focus_url: <span class="bu">str</span> <span class="op">=</span> <span class="st">""</span>,                <span class="co"># URL for click-to-focus (empty = disabled)</span></span>
+<span id="cb65-7"><a href="#cb65-7" aria-hidden="true" tabindex="-1"></a>                     ) <span class="op">-&gt;</span> Div:  <span class="co"># Table-row-group container with slot wrappers</span></span>
+<span id="cb65-8"><a href="#cb65-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render all visible rows in the current window as a table-row-group."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb66"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb66-1"><a href="#cb66-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_cell_oob(item: Any,                       <span class="co"># Data item</span></span>
+<span id="cb66-2"><a href="#cb66-2" aria-hidden="true" tabindex="-1"></a>                    column: ColumnDef,                <span class="co"># Column to render</span></span>
+<span id="cb66-3"><a href="#cb66-3" aria-hidden="true" tabindex="-1"></a>                    row_index: <span class="bu">int</span>,                   <span class="co"># Row index</span></span>
+<span id="cb66-4"><a href="#cb66-4" aria-hidden="true" tabindex="-1"></a>                    total_items: <span class="bu">int</span>,                 <span class="co"># Total item count</span></span>
+<span id="cb66-5"><a href="#cb66-5" aria-hidden="true" tabindex="-1"></a>                    ids: VirtualCollectionHtmlIds,    <span class="co"># HTML IDs</span></span>
+<span id="cb66-6"><a href="#cb66-6" aria-hidden="true" tabindex="-1"></a>                    render_cell: Callable,            <span class="co"># Consumer cell render callback</span></span>
+<span id="cb66-7"><a href="#cb66-7" aria-hidden="true" tabindex="-1"></a>                    is_cursor: <span class="bu">bool</span> <span class="op">=</span> <span class="va">False</span>,          <span class="co"># Whether row is keyboard cursor</span></span>
+<span id="cb66-8"><a href="#cb66-8" aria-hidden="true" tabindex="-1"></a>                   ) <span class="op">-&gt;</span> Div:  <span class="co"># Cell element with hx-swap-oob</span></span>
+<span id="cb66-9"><a href="#cb66-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a single cell with OOB swap for targeted update."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb67"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb67-1"><a href="#cb67-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_row_oob(item: Any,                       <span class="co"># Data item</span></span>
+<span id="cb67-2"><a href="#cb67-2" aria-hidden="true" tabindex="-1"></a>                   row_index: <span class="bu">int</span>,                   <span class="co"># Row index</span></span>
+<span id="cb67-3"><a href="#cb67-3" aria-hidden="true" tabindex="-1"></a>                   config: VirtualCollectionConfig,  <span class="co"># Collection config</span></span>
+<span id="cb67-4"><a href="#cb67-4" aria-hidden="true" tabindex="-1"></a>                   state: VirtualCollectionState,    <span class="co"># Collection state</span></span>
+<span id="cb67-5"><a href="#cb67-5" aria-hidden="true" tabindex="-1"></a>                   ids: VirtualCollectionHtmlIds,    <span class="co"># HTML IDs</span></span>
+<span id="cb67-6"><a href="#cb67-6" aria-hidden="true" tabindex="-1"></a>                   render_cell: Callable,            <span class="co"># Consumer cell render callback</span></span>
+<span id="cb67-7"><a href="#cb67-7" aria-hidden="true" tabindex="-1"></a>                  ) <span class="op">-&gt;</span> Div:  <span class="co"># Row element with hx-swap-oob</span></span>
+<span id="cb67-8"><a href="#cb67-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Render a full row with OOB swap for targeted update."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb68"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb68-1"><a href="#cb68-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> render_visible_cells_oob(</span>
+<span id="cb68-2"><a href="#cb68-2" aria-hidden="true" tabindex="-1"></a>    column: ColumnDef,                <span class="co"># Column to re-render</span></span>
+<span id="cb68-3"><a href="#cb68-3" aria-hidden="true" tabindex="-1"></a>    item_indices: List[<span class="bu">int</span>],          <span class="co"># Item indices that changed</span></span>
+<span id="cb68-4"><a href="#cb68-4" aria-hidden="true" tabindex="-1"></a>    items: <span class="bu">list</span>,                      <span class="co"># Full items list</span></span>
+<span id="cb68-5"><a href="#cb68-5" aria-hidden="true" tabindex="-1"></a>    state: VirtualCollectionState,    <span class="co"># Current VC state (for window bounds)</span></span>
+<span id="cb68-6"><a href="#cb68-6" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,    <span class="co"># HTML IDs</span></span>
+<span id="cb68-7"><a href="#cb68-7" aria-hidden="true" tabindex="-1"></a>    render_cell: Callable,            <span class="co"># Consumer cell render callback</span></span>
+<span id="cb68-8"><a href="#cb68-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple[Div, ...]:                <span class="co"># OOB cell elements for visible items only</span></span>
+<span id="cb68-9"><a href="#cb68-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Batch-render OOB cell updates for specified items within the visible window."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="variables-2" class="level4">
+<h4 class="anchored" data-anchor-id="variables-2">Variables</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb69"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb69-1"><a href="#cb69-1" aria-hidden="true" tabindex="-1"></a>SORT_ICON_SIZE <span class="op">=</span> <span class="dv">3</span>  <span class="co"># Tailwind size scale for sort indicator icons</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="js.touch-touch.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="js.touch-touch.ipynb">js.touch (<code>touch.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>JavaScript generator for touch/swipe to navigation conversion.</p>
+</blockquote>
+<section id="import-13" class="level4">
+<h4 class="anchored" data-anchor-id="import-13">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb70"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb70-1"><a href="#cb70-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.js.touch <span class="im">import</span> (</span>
+<span id="cb70-2"><a href="#cb70-2" aria-hidden="true" tabindex="-1"></a>    TOUCH_SWIPE_THRESHOLD,</span>
+<span id="cb70-3"><a href="#cb70-3" aria-hidden="true" tabindex="-1"></a>    TOUCH_MOMENTUM_MIN_VELOCITY,</span>
+<span id="cb70-4"><a href="#cb70-4" aria-hidden="true" tabindex="-1"></a>    TOUCH_MOMENTUM_FRICTION,</span>
+<span id="cb70-5"><a href="#cb70-5" aria-hidden="true" tabindex="-1"></a>    TOUCH_VELOCITY_SAMPLES,</span>
+<span id="cb70-6"><a href="#cb70-6" aria-hidden="true" tabindex="-1"></a>    generate_touch_nav_js</span>
+<span id="cb70-7"><a href="#cb70-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-11" class="level4">
+<h4 class="anchored" data-anchor-id="functions-11">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb71"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb71-1"><a href="#cb71-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> generate_touch_nav_js(</span>
+<span id="cb71-2"><a href="#cb71-2" aria-hidden="true" tabindex="-1"></a>    ids: VirtualCollectionHtmlIds,       <span class="co"># HTML IDs for this collection</span></span>
+<span id="cb71-3"><a href="#cb71-3" aria-hidden="true" tabindex="-1"></a>    button_ids: VirtualCollectionButtonIds,  <span class="co"># Button IDs for nav triggers (unused, kept for API consistency)</span></span>
+<span id="cb71-4"><a href="#cb71-4" aria-hidden="true" tabindex="-1"></a>    urls: VirtualCollectionUrls,         <span class="co"># URL bundle for direct HTMX ajax calls</span></span>
+<span id="cb71-5"><a href="#cb71-5" aria-hidden="true" tabindex="-1"></a>    step_distance: <span class="bu">int</span> <span class="op">=</span> TOUCH_SWIPE_THRESHOLD,  <span class="co"># Drag distance in px to trigger one nav step</span></span>
+<span id="cb71-6"><a href="#cb71-6" aria-hidden="true" tabindex="-1"></a>    disable_in_modes: Tuple[<span class="bu">str</span>, ...] <span class="op">=</span> (),  <span class="co"># Mode names where touch is suppressed</span></span>
+<span id="cb71-7"><a href="#cb71-7" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">str</span>:  <span class="co"># JavaScript IIFE</span></span>
+<span id="cb71-8"><a href="#cb71-8" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Generate JS for touch gesture to navigation conversion."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="variables-3" class="level4">
+<h4 class="anchored" data-anchor-id="variables-3">Variables</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb72"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb72-1"><a href="#cb72-1" aria-hidden="true" tabindex="-1"></a>TOUCH_SWIPE_THRESHOLD: <span class="bu">int</span> <span class="op">=</span> <span class="dv">30</span></span>
+<span id="cb72-2"><a href="#cb72-2" aria-hidden="true" tabindex="-1"></a>TOUCH_MOMENTUM_MIN_VELOCITY: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.5</span></span>
+<span id="cb72-3"><a href="#cb72-3" aria-hidden="true" tabindex="-1"></a>TOUCH_MOMENTUM_FRICTION: <span class="bu">float</span> <span class="op">=</span> <span class="fl">0.95</span></span>
+<span id="cb72-4"><a href="#cb72-4" aria-hidden="true" tabindex="-1"></a>TOUCH_VELOCITY_SAMPLES: <span class="bu">int</span> <span class="op">=</span> <span class="dv">5</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+</section>
+<section id="core.windowing-windowing.ipynb" class="level3">
+<h3 class="anchored" data-anchor-id="core.windowing-windowing.ipynb">core.windowing (<code>windowing.ipynb</code>)</h3>
+<blockquote class="blockquote">
+<p>Pure math functions for viewport window calculations and navigation.</p>
+</blockquote>
+<section id="import-14" class="level4">
+<h4 class="anchored" data-anchor-id="import-14">Import</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb73"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb73-1"><a href="#cb73-1" aria-hidden="true" tabindex="-1"></a><span class="im">from</span> cjm_fasthtml_virtual_collection.core.windowing <span class="im">import</span> (</span>
+<span id="cb73-2"><a href="#cb73-2" aria-hidden="true" tabindex="-1"></a>    clamp_window_start,</span>
+<span id="cb73-3"><a href="#cb73-3" aria-hidden="true" tabindex="-1"></a>    compute_window,</span>
+<span id="cb73-4"><a href="#cb73-4" aria-hidden="true" tabindex="-1"></a>    navigate,</span>
+<span id="cb73-5"><a href="#cb73-5" aria-hidden="true" tabindex="-1"></a>    navigate_cursor,</span>
+<span id="cb73-6"><a href="#cb73-6" aria-hidden="true" tabindex="-1"></a>    find_nearest_focusable</span>
+<span id="cb73-7"><a href="#cb73-7" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</section>
+<section id="functions-12" class="level4">
+<h4 class="anchored" data-anchor-id="functions-12">Functions</h4>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb74"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb74-1"><a href="#cb74-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> clamp_window_start(window_start: <span class="bu">int</span>,  <span class="co"># Requested first visible row</span></span>
+<span id="cb74-2"><a href="#cb74-2" aria-hidden="true" tabindex="-1"></a>                       visible_rows: <span class="bu">int</span>,   <span class="co"># Number of visible rows</span></span>
+<span id="cb74-3"><a href="#cb74-3" aria-hidden="true" tabindex="-1"></a>                       total_items: <span class="bu">int</span>,     <span class="co"># Total item count</span></span>
+<span id="cb74-4"><a href="#cb74-4" aria-hidden="true" tabindex="-1"></a>                      ) <span class="op">-&gt;</span> <span class="bu">int</span>:              <span class="co"># Clamped window_start</span></span>
+<span id="cb74-5"><a href="#cb74-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Clamp window_start to valid range."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb75"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb75-1"><a href="#cb75-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> compute_window(window_start: <span class="bu">int</span>,   <span class="co"># First visible row index (already clamped)</span></span>
+<span id="cb75-2"><a href="#cb75-2" aria-hidden="true" tabindex="-1"></a>                   visible_rows: <span class="bu">int</span>,    <span class="co"># Number of visible rows</span></span>
+<span id="cb75-3"><a href="#cb75-3" aria-hidden="true" tabindex="-1"></a>                   total_items: <span class="bu">int</span>,     <span class="co"># Total item count</span></span>
+<span id="cb75-4"><a href="#cb75-4" aria-hidden="true" tabindex="-1"></a>                  ) <span class="op">-&gt;</span> Tuple[<span class="bu">int</span>, <span class="bu">int</span>]:  <span class="co"># (render_start, render_end) exclusive end</span></span>
+<span id="cb75-5"><a href="#cb75-5" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Compute the range of rows to render."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb76"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb76-1"><a href="#cb76-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> navigate(window_start: <span class="bu">int</span>,   <span class="co"># Current first visible row</span></span>
+<span id="cb76-2"><a href="#cb76-2" aria-hidden="true" tabindex="-1"></a>             direction: <span class="bu">str</span>,       <span class="co"># 'up', 'down', 'page_up', 'page_down', 'first', 'last'</span></span>
+<span id="cb76-3"><a href="#cb76-3" aria-hidden="true" tabindex="-1"></a>             visible_rows: <span class="bu">int</span>,    <span class="co"># Number of visible rows</span></span>
+<span id="cb76-4"><a href="#cb76-4" aria-hidden="true" tabindex="-1"></a>             total_items: <span class="bu">int</span>,     <span class="co"># Total item count</span></span>
+<span id="cb76-5"><a href="#cb76-5" aria-hidden="true" tabindex="-1"></a>            ) <span class="op">-&gt;</span> <span class="bu">int</span>:              <span class="co"># New window_start (clamped)</span></span>
+<span id="cb76-6"><a href="#cb76-6" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Compute new window_start for a navigation action."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb77"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb77-1"><a href="#cb77-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> navigate_cursor(</span>
+<span id="cb77-2"><a href="#cb77-2" aria-hidden="true" tabindex="-1"></a>    cursor_index: <span class="bu">int</span>,    <span class="co"># Current cursor position (-1 treated as window_start)</span></span>
+<span id="cb77-3"><a href="#cb77-3" aria-hidden="true" tabindex="-1"></a>    direction: <span class="bu">str</span>,       <span class="co"># 'up' or 'down'</span></span>
+<span id="cb77-4"><a href="#cb77-4" aria-hidden="true" tabindex="-1"></a>    window_start: <span class="bu">int</span>,    <span class="co"># Current first visible row</span></span>
+<span id="cb77-5"><a href="#cb77-5" aria-hidden="true" tabindex="-1"></a>    visible_rows: <span class="bu">int</span>,    <span class="co"># Number of visible rows</span></span>
+<span id="cb77-6"><a href="#cb77-6" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span>,     <span class="co"># Total item count</span></span>
+<span id="cb77-7"><a href="#cb77-7" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable[[<span class="bu">int</span>], <span class="bu">bool</span>]] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Predicate: index -&gt; skip this item?</span></span>
+<span id="cb77-8"><a href="#cb77-8" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> Tuple[<span class="bu">int</span>, <span class="bu">int</span>, <span class="bu">bool</span>]:  <span class="co"># (new_cursor, new_window_start, window_changed)</span></span>
+<span id="cb77-9"><a href="#cb77-9" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Move cursor up/down within the visible window, scrolling at edges."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb78"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb78-1"><a href="#cb78-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> find_nearest_focusable(</span>
+<span id="cb78-2"><a href="#cb78-2" aria-hidden="true" tabindex="-1"></a>    index: <span class="bu">int</span>,           <span class="co"># Starting index to search from</span></span>
+<span id="cb78-3"><a href="#cb78-3" aria-hidden="true" tabindex="-1"></a>    total_items: <span class="bu">int</span>,     <span class="co"># Total item count</span></span>
+<span id="cb78-4"><a href="#cb78-4" aria-hidden="true" tabindex="-1"></a>    is_skippable: Optional[Callable[[<span class="bu">int</span>], <span class="bu">bool</span>]] <span class="op">=</span> <span class="va">None</span>,  <span class="co"># Predicate: index -&gt; skip?</span></span>
+<span id="cb78-5"><a href="#cb78-5" aria-hidden="true" tabindex="-1"></a>    direction: <span class="bu">int</span> <span class="op">=</span> <span class="dv">1</span>,   <span class="co"># Search direction: 1 (forward) or -1 (backward)</span></span>
+<span id="cb78-6"><a href="#cb78-6" aria-hidden="true" tabindex="-1"></a>) <span class="op">-&gt;</span> <span class="bu">int</span>:  <span class="co"># Nearest focusable index, or -1 if none found</span></span>
+<span id="cb78-7"><a href="#cb78-7" aria-hidden="true" tabindex="-1"></a>    <span class="co">"Find the nearest non-skippable index from a starting position."</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+
+
+</section>
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/cj-mills\.github\.io\/cjm-fasthtml-virtual-collection");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/cj-mills/cjm-fasthtml-virtual-collection/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
