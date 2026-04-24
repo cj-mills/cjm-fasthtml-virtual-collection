@@ -24,6 +24,9 @@ from cjm_fasthtml_daisyui.utilities.semantic_colors import border_dui, bg_dui, t
 
 from cjm_fasthtml_lucide_icons.factory import lucide_icon
 
+# Design system recipes (V11 icon-size roles)
+from cjm_fasthtml_design_system.icons import icons
+
 from cjm_fasthtml_virtual_collection.core.models import (
     ColumnDef, VirtualCollectionConfig, VirtualCollectionState,
     VirtualCollectionUrls, CellRenderContext, RowRenderContext,
@@ -31,7 +34,7 @@ from cjm_fasthtml_virtual_collection.core.models import (
 from ..core.html_ids import VirtualCollectionHtmlIds
 
 # %% ../../nbs/components/table.ipynb #c45cb2ee
-SORT_ICON_SIZE = 3  # Tailwind size scale for sort indicator icons
+SORT_ICON_SIZE = icons.dense_inline  # Tailwind size scale for sort indicator icons (V11 dense_inline role)
 
 def _sort_indicator(column: ColumnDef,  # Column definition
                     state: VirtualCollectionState,  # Collection state (for current sort)
