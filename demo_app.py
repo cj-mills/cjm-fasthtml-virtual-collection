@@ -62,6 +62,7 @@ def main():
     from cjm_fasthtml_daisyui.core.testing import create_theme_persistence_script
     from cjm_fasthtml_daisyui.utilities.semantic_colors import text_dui
     from cjm_fasthtml_daisyui.components.actions.button import btn, btn_colors, btn_sizes
+    from cjm_fasthtml_design_system.buttons import buttons
 
     from cjm_fasthtml_tailwind.utilities.spacing import p, m
     from cjm_fasthtml_tailwind.utilities.sizing import container, max_w
@@ -339,7 +340,7 @@ def main():
 
                 A("Open Table Demo",
                   href=demo_table.to(),
-                  cls=combine_classes(btn, btn_colors.primary, btn_sizes.lg)),
+                  cls=buttons.page_primary),
 
                 cls=combine_classes(
                     container, max_w._4xl, m.x.auto, p(8), text_align.center
