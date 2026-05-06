@@ -21,6 +21,8 @@ from fasthtml.common import Div, H2, P, Span, Script
 from cjm_fasthtml_daisyui.utilities.semantic_colors import bg_dui, text_dui, border_dui
 from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_colors
 
+from cjm_fasthtml_design_system.text_tiers import text_tiers
+
 from cjm_fasthtml_tailwind.utilities.spacing import p, m
 from cjm_fasthtml_tailwind.utilities.sizing import w, h
 from cjm_fasthtml_tailwind.utilities.typography import font_size, font_weight, truncate
@@ -107,9 +109,9 @@ def setup():
         if ctx.column.key == "name":
             return Span(item.name, cls=str(truncate))
         elif ctx.column.key == "size":
-            return Span(item.size, cls=combine_classes(text_dui.base_content.opacity(70), font_size.sm))
+            return Span(item.size, cls=combine_classes(text_tiers.secondary, font_size.sm))
         elif ctx.column.key == "type":
-            return Span(item.file_type, cls=combine_classes(text_dui.base_content.opacity(70), font_size.sm))
+            return Span(item.file_type, cls=combine_classes(text_tiers.secondary, font_size.sm))
         return Span("")
 
     def sort_items(items_list, column_key, ascending):

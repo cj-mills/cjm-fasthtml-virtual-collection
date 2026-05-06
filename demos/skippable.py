@@ -22,6 +22,8 @@ from cjm_fasthtml_daisyui.utilities.semantic_colors import bg_dui, text_dui, bor
 from cjm_fasthtml_daisyui.components.data_display.badge import badge, badge_colors
 from cjm_fasthtml_daisyui.components.actions.button import btn, btn_styles, btn_sizes
 
+from cjm_fasthtml_design_system.text_tiers import text_tiers
+
 from cjm_fasthtml_tailwind.utilities.spacing import p, m
 from cjm_fasthtml_tailwind.utilities.sizing import w, h
 from cjm_fasthtml_tailwind.utilities.typography import (
@@ -166,8 +168,8 @@ def setup():
         return Div(
             Span(f"Focused: ", cls=font_weight.semibold),
             Span(item.name, cls=combine_classes(font_weight.bold, text_dui.primary)),
-            Span(f" ({item.value})", cls=text_dui.base_content.opacity(70)) if item.value else None,
-            Span(f" — row {index} of {len(items)}", cls=combine_classes(font_size.sm, text_dui.base_content.opacity(50))),
+            Span(f" ({item.value})", cls=text_tiers.secondary) if item.value else None,
+            Span(f" — row {index} of {len(items)}", cls=combine_classes(font_size.sm, text_tiers.muted)),
             id=detail_panel_id,
             hx_swap_oob="innerHTML",
             cls=combine_classes(p(3), bg_dui.base_200, rounded(), font_size.sm),
@@ -196,9 +198,9 @@ def setup():
         if ctx.column.key == "name":
             return Span(item.name, cls=str(truncate))
         elif ctx.column.key == "value":
-            return Span(item.value, cls=combine_classes(text_dui.base_content.opacity(70), font_size.sm))
+            return Span(item.value, cls=combine_classes(text_tiers.secondary, font_size.sm))
         elif ctx.column.key == "category":
-            return Span(item.category, cls=combine_classes(text_dui.base_content.opacity(50), font_size.sm))
+            return Span(item.category, cls=combine_classes(text_tiers.muted, font_size.sm))
         return Span("")
 
     def is_item_skippable(item):
