@@ -8,7 +8,7 @@ __all__ = ['init_virtual_collection_router']
 # %% ../../nbs/routes/router.ipynb #711bb97a
 from typing import Any, Callable, List, Optional, Tuple
 
-from fasthtml.common import APIRouter
+from cjm_fasthtml_app_core.core.routing import APIRouter
 
 from cjm_fasthtml_virtual_collection.core.models import (
     VirtualCollectionConfig, VirtualCollectionState, VirtualCollectionUrls,

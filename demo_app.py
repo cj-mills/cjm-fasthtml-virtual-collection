@@ -56,7 +56,8 @@ def _generate_sample_data(count: int = 500) -> list[SampleFile]:
 
 def main():
     """Initialize virtual collection demo and start the server."""
-    from fasthtml.common import fast_app, Div, H1, H2, P, A, Script, APIRouter
+    from fasthtml.common import fast_app, Div, H1, H2, P, A, Script
+    from cjm_fasthtml_app_core.core.routing import APIRouter
 
     from cjm_fasthtml_daisyui.core.resources import get_daisyui_headers
     from cjm_fasthtml_daisyui.core.testing import create_theme_persistence_script
