@@ -42,37 +42,59 @@ def render_virtual_collection(
     if config.layout == "table":
         assert render_cell is not None, "render_cell required for table layout"
 
-        # Empty state: replace table body with consumer-provided component
-        if state.total_items == 0 and render_empty is not None:
-            table = Div(
-                Div(
-                    render_header_row(config, ids, state=state, sort_url=urls.sort),
-                    cls=combine_classes(table_display.header_group),
-                ),
-                render_empty(),
-                id=ids.table,
-                cls=combine_classes(table_display, w.full, border_collapse.collapse),
-            )
-        else:
-            # CSS Table: header group + body group
-            table = Div(
-                Div(
-                    render_header_row(config, ids, state=state, sort_url=urls.sort),
-                    cls=combine_classes(table_display.header_group),
-                ),
-                render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row),
-                id=ids.table,
-                cls=combine_classes(table_display, w.full, border_collapse.collapse),
+        is_empty = state.total_items == 0 and render_empty is not None
+
+        # Table always renders the header-group. In the data case, the body-group
+        # is also a child of the table-display Div (CSS-table internal). In the
+        # empty case, the body-group is omitted — empty content lives as a sibling
+        # of the table (see below), not as a table-display child, so it isn't
+        # constrained by CSS table layout (cell-anonymization, intrinsic-height
+        # collapse) and can use flexbox to fill the remaining viewport.
+        table_children = [
+            Div(
+                render_header_row(config, ids, state=state, sort_url=urls.sort),
+                cls=combine_classes(table_display.header_group),
+            ),
+        ]
+        if not is_empty:
+            table_children.append(
+                render_table_rows(items, config, state, ids, render_cell, focus_url=urls.focus_row)
             )
 
-        # Wrapper (viewport-fit target) + scrollbar side-by-side
+        table = Div(
+            *table_children,
+            id=ids.table,
+            cls=combine_classes(table_display, w.full, border_collapse.collapse),
+        )
+
+        # Wrapper composition:
+        # - Data case: wrapper holds the table only (block context; CSS table owns inner layout)
+        # - Empty case: wrapper holds the header-only table + a sibling empty-region Div below;
+        #   wrapper becomes a flex column so the empty region's grow() fills the remaining space
+        wrapper_children = [table]
+        wrapper_cls = combine_classes(flex(1), min_h._0, overflow.y.hidden, touch.pan_x)
+        if is_empty:
+            # Empty-region wrapper: flex column + grow() to fill the vertical space
+            # below the header-only table; provides a flex-column parent context so
+            # consumer-supplied render_empty() output (e.g., V8 anatomy via app-core's
+            # render_empty_state) renders with its own grow() resolving correctly.
+            empty_region = Div(
+                render_empty(),
+                cls=combine_classes(flex_display, flex_direction.col, grow(), min_h._0),
+            )
+            wrapper_children.append(empty_region)
+            wrapper_cls = combine_classes(
+                flex(1), min_h._0, overflow.y.hidden, touch.pan_x,
+                flex_display, flex_direction.col,
+            )
+
         # touch-pan-x: allow native horizontal pan for wide tables,
         # suppress vertical (handled by discrete navigation)
         # min-h-0: allow shrinking below content height in flex parents
         wrapper = Div(
-            table,
+            *wrapper_children,
             id=ids.wrapper,
-            cls=combine_classes(flex(1), min_h._0, overflow.y.hidden, touch.pan_x),
+            cls=wrapper_cls,
         )
 
         if config.show_scrollbar:
