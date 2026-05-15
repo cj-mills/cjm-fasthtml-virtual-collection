@@ -55,6 +55,10 @@ def setup():
     from cjm_fasthtml_viewport_fit.models import ViewportFitConfig
     from cjm_fasthtml_viewport_fit.components import render_viewport_fit_script
 
+    # V8 empty-state composition (anatomy from design-system, helper from app-core)
+    from cjm_fasthtml_app_core.components.empty_state import render_empty_state
+    from cjm_fasthtml_design_system.buttons import buttons
+
     # -------------------------------------------------------------------------
     # Data
     # -------------------------------------------------------------------------
@@ -138,10 +142,32 @@ def setup():
     )
 
     # -------------------------------------------------------------------------
+    # Viewport-fit config
+    # -------------------------------------------------------------------------
+    # Defined here (rather than alongside page_content) so _refit can reference
+    # vf_config.recalc_fn — the wrapper-OOB swap path in build_items_changed_response
+    # replaces the wrapper element wholesale, losing the inline height styles
+    # viewport-fit had attached. Chaining the viewport-fit recalc into _refit
+    # re-applies those styles after the swap.
+
+    vf_config = ViewportFitConfig(
+        namespace=config.prefix,
+        target_id=ids.wrapper,
+        resize_callback=auto_fit_callback_name(config),
+        enable_htmx_settle=False,
+    )
+
+    # -------------------------------------------------------------------------
     # Mutation routes
     # -------------------------------------------------------------------------
+    # _refit chains viewport-fit recalc → auto-fit recalc. This mirrors the
+    # canonical sequence run on window resize (viewport-fit applies inline
+    # height styles to the wrapper first; auto-fit then re-evaluates visible
+    # row count against the freshly-measured wrapper). Calling auto-fit alone
+    # would skip the inline-style re-application, leaving the swapped wrapper
+    # at intrinsic height.
 
-    _refit = auto_fit_callback_name(config)
+    _refit = f"window.{vf_config.recalc_fn}(); {auto_fit_callback_name(config)}"
     demo_router = APIRouter(prefix="/del_demo")
 
     @demo_router.post
@@ -153,10 +179,13 @@ def setup():
         idx = state.cursor_index
         items.pop(idx)
 
-        # Use the new public API
+        # Use the new public API — pass sort_url + render_empty so the
+        # wrapper-OOB swap path handles populated↔empty transitions cleanly.
         vc_oobs = build_items_changed_response(
             items, state, config, ids, render_cell,
-            focus_url=urls.focus_row, refit_callback=_refit,
+            focus_url=urls.focus_row, sort_url=urls.sort,
+            render_empty=render_demo_empty,
+            refit_callback=_refit,
         )
 
         # Also update stats bar via OOB
@@ -171,6 +200,8 @@ def setup():
         items.clear()
         vc_oobs = build_items_changed_response(
             items, state, config, ids, render_cell,
+            focus_url=urls.focus_row, sort_url=urls.sort,
+            render_empty=render_demo_empty,
             refit_callback=_refit,
         )
         stats = _render_stats()
@@ -193,7 +224,9 @@ def setup():
 
         vc_oobs = build_items_changed_response(
             items, state, config, ids, render_cell,
-            focus_url=urls.focus_row, refit_callback=_refit,
+            focus_url=urls.focus_row, sort_url=urls.sort,
+            render_empty=render_demo_empty,
+            refit_callback=_refit,
         )
         stats = _render_stats()
         stats.attrs['hx-swap-oob'] = 'outerHTML'
@@ -210,11 +243,37 @@ def setup():
         _next_id[0] = ITEM_COUNT
         vc_oobs = build_items_changed_response(
             items, state, config, ids, render_cell,
-            focus_url=urls.focus_row, refit_callback=_refit,
+            focus_url=urls.focus_row, sort_url=urls.sort,
+            render_empty=render_demo_empty,
+            refit_callback=_refit,
         )
         stats = _render_stats()
         stats.attrs['hx-swap-oob'] = 'outerHTML'
         return (*vc_oobs, stats)
+
+    # -------------------------------------------------------------------------
+    # Empty-state callback (V8 anatomy + V1 CTA)
+    # -------------------------------------------------------------------------
+    # Demonstrates the V8 + V1 composition pattern: app-core's render_empty_state
+    # helper composes V8 anatomy (wrapper / icon / title / detail) and accepts a
+    # CTA as arbitrary FT — here, a V1 primary_action Button that triggers the
+    # reset_items HTMX route. The CTA mirrors the toolbar's Reset button (same
+    # hx_post + hx_swap="none" OOB-routed pattern) so the empty state is
+    # actionable without requiring the user to leave the surface.
+
+    def render_demo_empty():
+        return render_empty_state(
+            message="All items deleted",
+            detail="Click Reset Collection to restore the demo items "
+                   "(or use the toolbar above).",
+            icon_name="inbox",
+            cta=Button(
+                f"Reset Collection ({ITEM_COUNT} items)",
+                cls=buttons.primary_action,
+                hx_post=reset_items.to(),
+                hx_swap="none",
+            ),
+        )
 
     # -------------------------------------------------------------------------
     # Keyboard system
@@ -236,13 +295,8 @@ def setup():
     # -------------------------------------------------------------------------
     # Page content
     # -------------------------------------------------------------------------
-
-    vf_config = ViewportFitConfig(
-        namespace=config.prefix,
-        target_id=ids.wrapper,
-        resize_callback=auto_fit_callback_name(config),
-        enable_htmx_settle=False,
-    )
+    # vf_config is built earlier (above the mutation routes) so _refit can chain
+    # the viewport-fit recalc into the refit script.
 
     def page_content():
         auto_fit_js = generate_auto_fit_js(
@@ -278,6 +332,7 @@ def setup():
             render_virtual_collection(
                 items=items, config=config, state=state,
                 ids=ids, urls=urls, render_cell=render_cell,
+                render_empty=render_demo_empty,
             ),
 
             # Keyboard system

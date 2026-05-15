@@ -24,6 +24,11 @@ from cjm_fasthtml_virtual_collection.core.windowing import (
 from ..components.table import render_slot, render_table_rows
 from ..components.footer import render_footer
 from ..components.scrollbar import render_scrollbar
+# _build_table_wrapper is intentionally cross-module: build_items_changed_response
+# uses it for the wrapper-OOB swap path that handles populated↔empty transitions.
+# Keeping the helper in components.collection (next to render_virtual_collection)
+# ensures both paths produce the same wrapper shape.
+from ..components.collection import _build_table_wrapper
 
 # %% ../../nbs/routes/handlers.ipynb #2adaa2a1
 def _render_window_start_oob(
@@ -455,14 +460,43 @@ def build_items_changed_response(
     ids:VirtualCollectionHtmlIds,  # HTML IDs
     render_cell:Callable,  # Consumer cell render callback
     focus_url:str="",  # URL for click-to-focus
+    sort_url:str="",  # URL for sortable column headers (used by the wrapper-OOB path when render_empty is supplied)
+    render_empty:Optional[Callable]=None,  # Empty-state callback: () -> FT. When supplied, mutations OOB-swap the wrapper's INNER content (handles populated↔empty transitions cleanly while preserving wrapper identity).
     is_skippable:Optional[Callable[[Any], bool]]=None,  # Predicate: item -> skip?
     refit_callback:str="",  # JS auto-fit call expression (from auto_fit_callback_name)
-) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start [+ refit trigger])
+) -> Tuple:  # OOB elements (rows or wrapper-inner + scrollbar + footer + window_start [+ refit trigger])
     """Rebuild the VC after the consumer modifies the item list externally.
 
-    Updates total_items, clamps window_start and cursor_index, then replaces
-    the entire rows container via OOB. Use this after deleting, adding, or
-    filtering items — any operation that changes the item count.
+    Updates total_items, clamps window_start and cursor_index, then emits OOB
+    swaps reflecting the new item count. Use this after any operation that
+    changes the item count (delete, add, filter).
+
+    Two swap strategies, opt-in via the `render_empty` parameter:
+
+    - **`render_empty is None` (default — backward-compatible):** the OOB swap
+      targets the rows container (`ids.rows`) only via `outerHTML`. Header and
+      wrapper stay as initially rendered. Existing behavior for consumers that
+      haven't opted into empty-state support.
+
+    - **`render_empty is not None`:** the OOB swap targets the wrapper's INNER
+      content (`ids.wrapper` with `hx-swap-oob='innerHTML'`). The wrapper
+      element itself is preserved — keeping its inline height styles (set by
+      viewport-fit at initial render or via window resize) intact across the
+      swap. Only the wrapper's children are replaced: the header-only table +
+      empty-region sibling when items go to zero, or the header+body-group
+      table when items are restored. This handles populated↔empty transitions
+      cleanly without HTMX's outerHTML attribute-settle behavior stripping
+      viewport-fit's inline styles. Pair with `sort_url=urls.sort` so the
+      re-rendered header preserves sort URLs.
+
+      *Why innerHTML, not outerHTML*: HTMX's outerHTML OOB swap has a two-phase
+      attribute lifecycle — at swap time it preserves the old element's
+      attributes on the new element (for CSS transitions), then at settle
+      time (~38ms later via setTimeout) it strips attributes that aren't in
+      the response. Server-rendered wrappers carry no inline style attribute,
+      so HTMX's settle pass removes viewport-fit's runtime-applied height
+      styles. The innerHTML mode sidesteps this entirely: the wrapper element
+      identity is preserved, so its style attribute isn't touched.
 
     Pass `refit_callback` (from `auto_fit_callback_name(config)`) to trigger
     auto-fit re-evaluation after the update — needed when items are added and
@@ -487,15 +521,48 @@ def build_items_changed_response(
             state.cursor_index, state.total_items, _skip_idx, direction=-1,
         )
 
-    result = _build_container_response(items, state, config, ids, render_cell, focus_url)
+    if render_empty is not None:
+        # Wrapper-inner OOB swap path: handles populated↔empty transitions
+        # while preserving wrapper element identity. _build_table_wrapper
+        # produces the same wrapper shape as the initial render in
+        # render_virtual_collection — both flows route through this helper
+        # to ensure V8 / G5+G7 empty-state placement is consistent.
+        wrapper_oob = _build_table_wrapper(
+            items, state, config, ids, render_cell,
+            focus_url=focus_url, sort_url=sort_url,
+            render_empty=render_empty,
+        )
+        # innerHTML swap (not outerHTML): preserves the wrapper element
+        # identity, keeping viewport-fit's inline height styles intact across
+        # the swap. HTMX matches by id and replaces only the inner content.
+        # The wrapper class doesn't toggle between empty/populated cases —
+        # see _build_table_wrapper's docstring for the flex-col-always rationale.
+        wrapper_oob.attrs["hx-swap-oob"] = "innerHTML"
+        result = (
+            wrapper_oob,
+            render_footer(state, ids, oob=True),
+            _render_window_start_oob(state, ids),
+        )
+        sb_oob = _render_scrollbar_oob(state, config, ids)
+        if sb_oob is not None:
+            result = result + (sb_oob,)
+    else:
+        # Legacy path: rows-only OOB swap. No empty-state support; behavior
+        # preserved for consumers that haven't opted in via render_empty.
+        result = _build_container_response(items, state, config, ids, render_cell, focus_url)
 
     if refit_callback:
         from fasthtml.common import Div, Script
 
-        # OOB-swap the refit trigger div with a script that calls auto-fit.
-        # HTMX executes scripts in OOB-swapped content.
+        # OOB-swap the refit trigger div with a script that calls the refit
+        # callback. HTMX executes scripts in OOB-swapped content.
+        # requestAnimationFrame defers slightly so auto-fit measurements run
+        # against the settled DOM (after HTMX's attribute reconciliation
+        # completes). With the innerHTML-OOB wrapper-swap above, the wrapper's
+        # inline styles are never stripped, so timing here is less critical
+        # than with outerHTML — but rAF stays the right defer primitive.
         trigger = Div(
-            Script(f"setTimeout(() => {{ {refit_callback}; }}, 0);"),
+            Script(f"requestAnimationFrame(() => {{ {refit_callback}; }});"),
             id=ids.refit_trigger,
             style="display:none",
         )

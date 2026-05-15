@@ -55,42 +55,43 @@ graph LR
     routes_handlers[routes.handlers<br/>routes.handlers]
     routes_router[routes.router<br/>routes.router]
 
-    components_collection --> components_footer
     components_collection --> components_table
-    components_collection --> components_scrollbar
-    components_collection --> core_models
     components_collection --> core_html_ids
+    components_collection --> core_models
+    components_collection --> components_scrollbar
+    components_collection --> components_footer
     components_footer --> core_models
-    components_footer --> core_windowing
     components_footer --> core_html_ids
+    components_footer --> core_windowing
     components_scrollbar --> core_models
     components_scrollbar --> core_html_ids
-    components_table --> core_models
     components_table --> core_html_ids
+    components_table --> core_models
     js_auto_fit --> core_models
     js_auto_fit --> core_html_ids
     js_scroll --> core_button_ids
     js_scroll --> core_html_ids
     js_scrollbar --> core_models
     js_scrollbar --> core_html_ids
-    js_touch --> core_button_ids
     js_touch --> core_models
+    js_touch --> core_button_ids
     js_touch --> core_html_ids
-    keyboard_actions --> core_button_ids
     keyboard_actions --> core_models
+    keyboard_actions --> core_button_ids
     keyboard_actions --> core_html_ids
-    routes_handlers --> components_footer
     routes_handlers --> components_table
-    routes_handlers --> components_scrollbar
     routes_handlers --> core_windowing
-    routes_handlers --> core_models
     routes_handlers --> core_html_ids
+    routes_handlers --> core_models
+    routes_handlers --> components_scrollbar
+    routes_handlers --> components_collection
+    routes_handlers --> components_footer
     routes_router --> routes_handlers
-    routes_router --> core_models
     routes_router --> core_html_ids
+    routes_router --> core_models
 ```
 
-*33 cross-module dependencies detected*
+*34 cross-module dependencies detected*
 
 ## CLI Reference
 
@@ -267,6 +268,43 @@ from cjm_fasthtml_virtual_collection.components.collection import (
 ```
 
 #### Functions
+
+``` python
+def _build_table_wrapper(
+    items: list,                                # Full item list
+    state: VirtualCollectionState,               # Collection state
+    config: VirtualCollectionConfig,             # Collection config
+    ids: VirtualCollectionHtmlIds,               # HTML IDs
+    render_cell: Callable,                       # Consumer cell render callback
+    focus_url: str = "",                         # URL for click-to-focus
+    sort_url: str = "",                          # URL for sortable column headers
+    render_empty: Optional[Callable] = None,     # Empty state callback: () -> FT component
+) -> Div:  # Wrapper Div containing the table (and optional empty-region sibling)
+    """
+    Build the wrapper Div for the table layout.
+    
+    Wrapper is ALWAYS a flex column. Its children differ between cases:
+    
+    - Data case (state.total_items > 0 or render_empty is None): single child,
+      a table Div with header-group + body-group as CSS-table internals. The
+      table renders as a flex item with its intrinsic height; w.full on the
+      table fills the wrapper width via the flex container's cross-axis stretch.
+    - Empty case (state.total_items == 0 and render_empty is provided): two
+      children — the header-only table + a sibling empty-region Div below. The
+      empty-region uses grow() to fill remaining vertical space, which resolves
+      against the wrapper's flex column layout.
+    
+    The wrapper class is invariant across cases — both shapes use the same
+    flex-column container. This is load-bearing for the mutation-via-OOB path:
+    build_items_changed_response uses hx-swap-oob='innerHTML' to swap children
+    only (preserving the wrapper element identity, which preserves viewport-fit's
+    inline height styles). Since innerHTML swap doesn't touch the wrapper's
+    class attribute, the class must work for both empty and populated states —
+    so flex-col is always-on. CSS tables render identically as a flex item or
+    in block context with respect to w.full + intrinsic height, so the data
+    case is unchanged behaviorally.
+    """
+```
 
 ``` python
 def render_virtual_collection(
@@ -527,21 +565,39 @@ def handle_sort(
 
 ``` python
 def build_items_changed_response(
-    items:list,  # Full item list (already mutated by consumer)
-    state:VirtualCollectionState,  # Current state (mutated in place)
-    config:VirtualCollectionConfig,  # Collection config
-    ids:VirtualCollectionHtmlIds,  # HTML IDs
-    render_cell:Callable,  # Consumer cell render callback
-    focus_url:str="",  # URL for click-to-focus
-    is_skippable:Optional[Callable[[Any], bool]]=None,  # Predicate: item -> skip?
-    refit_callback:str="",  # JS auto-fit call expression (from auto_fit_callback_name)
-) -> Tuple:  # OOB elements (container + scrollbar + footer + window_start [+ refit trigger])
     """
     Rebuild the VC after the consumer modifies the item list externally.
     
-    Updates total_items, clamps window_start and cursor_index, then replaces
-    the entire rows container via OOB. Use this after deleting, adding, or
-    filtering items — any operation that changes the item count.
+    Updates total_items, clamps window_start and cursor_index, then emits OOB
+    swaps reflecting the new item count. Use this after any operation that
+    changes the item count (delete, add, filter).
+    
+    Two swap strategies, opt-in via the `render_empty` parameter:
+    
+    - **`render_empty is None` (default — backward-compatible):** the OOB swap
+      targets the rows container (`ids.rows`) only via `outerHTML`. Header and
+      wrapper stay as initially rendered. Existing behavior for consumers that
+      haven't opted into empty-state support.
+    
+    - **`render_empty is not None`:** the OOB swap targets the wrapper's INNER
+      content (`ids.wrapper` with `hx-swap-oob='innerHTML'`). The wrapper
+      element itself is preserved — keeping its inline height styles (set by
+      viewport-fit at initial render or via window resize) intact across the
+      swap. Only the wrapper's children are replaced: the header-only table +
+      empty-region sibling when items go to zero, or the header+body-group
+      table when items are restored. This handles populated↔empty transitions
+      cleanly without HTMX's outerHTML attribute-settle behavior stripping
+      viewport-fit's inline styles. Pair with `sort_url=urls.sort` so the
+      re-rendered header preserves sort URLs.
+    
+      *Why innerHTML, not outerHTML*: HTMX's outerHTML OOB swap has a two-phase
+      attribute lifecycle — at swap time it preserves the old element's
+      attributes on the new element (for CSS transitions), then at settle
+      time (~38ms later via setTimeout) it strips attributes that aren't in
+      the response. Server-rendered wrappers carry no inline style attribute,
+      so HTMX's settle pass removes viewport-fit's runtime-applied height
+      styles. The innerHTML mode sidesteps this entirely: the wrapper element
+      identity is preserved, so its style attribute isn't touched.
     
     Pass `refit_callback` (from `auto_fit_callback_name(config)`) to trigger
     auto-fit re-evaluation after the update — needed when items are added and
